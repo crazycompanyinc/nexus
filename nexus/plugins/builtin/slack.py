@@ -1,0 +1,28 @@
+from __future__ import annotations
+
+from typing import Any
+
+from nexus.plugins.sdk import BasePlugin, PluginMetadata
+
+
+class SlackPlugin(BasePlugin):
+    metadata = PluginMetadata(
+        id="slack",
+        name="Slack",
+        description="Messages, channels, and reactions.",
+        version="1.0.0",
+        plugin_type="api",
+        capabilities=["messages.send", "channels.list", "reactions.add"],
+        endpoint="https://slack.com/api",
+        auth_required=True,
+        auth_type="oauth",
+    )
+
+    def execute(self, action: str, params: dict[str, Any]) -> Any:
+        if action == "messages.send":
+            return {"sent": True, "channel": params.get("channel", "#general"), "text": params.get("text", "")}
+        if action == "channels.list":
+            return [{"id": "C1", "name": "general"}, {"id": "C2", "name": "deploys"}]
+        if action == "reactions.add":
+            return {"ok": True, "reaction": params.get("reaction", "thumbsup")}
+        raise ValueError(f"Unsupported Slack action: {action}")

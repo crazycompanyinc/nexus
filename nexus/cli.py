@@ -1,0 +1,189 @@
+from __future__ import annotations
+
+import json
+from dataclasses import asdict
+from typing import Any
+
+import click
+import uvicorn
+
+from nexus.api.unified import UnifiedToolAPI
+from nexus.composition.workflow import Pipeline, WorkflowBuilder
+from nexus.core.db import NexusStore
+from nexus.discovery.discovery import ToolDiscovery
+from nexus.metrics.metrics import UsageMetrics
+from nexus.permissions.access import AccessControl
+from nexus.plugins.manager import PluginManager
+from nexus.server.app import create_app
+
+
+class Runtime:
+    def __init__(self) -> None:
+        self.store = NexusStore()
+        self.manager = PluginManager(self.store)
+        self.api = UnifiedToolAPI(self.store, self.manager, AccessControl(self.store))
+        self.workflows = WorkflowBuilder(self.store)
+        self.pipeline = Pipeline(self.api, self.store)
+
+
+runtime = Runtime()
+
+
+def emit(value: Any) -> None:
+    click.echo(json.dumps(value, default=str, indent=2))
+
+
+@click.group()
+def cli() -> None:
+    """Nexus universal agent integration hub."""
+
+
+@cli.command()
+def init() -> None:
+    emit({"installed": [plugin.id for plugin in runtime.manager.install_all_builtins()]})
+
+
+@cli.command()
+@click.argument("agent_id")
+def register(agent_id: str) -> None:
+    runtime.store.register_agent(agent_id)
+    runtime.store.audit("agent.registered", agent_id=agent_id)
+    emit({"agent_id": agent_id, "registered": True})
+
+
+@cli.command()
+@click.argument("plugin")
+def install(plugin: str) -> None:
+    emit(asdict(runtime.manager.install_builtin(plugin)))
+
+
+@cli.command("plugins")
+@click.option("--discover", is_flag=True)
+def list_plugins(discover: bool) -> None:
+    if discover:
+        emit(ToolDiscovery(runtime.manager).available_tools())
+    else:
+        emit([asdict(plugin) for plugin in runtime.manager.list_plugins()])
+
+
+@cli.command()
+@click.argument("agent")
+@click.option("--tool", "tool_id", required=True)
+@click.option("--level", default="read", type=click.Choice(["read", "write", "admin"]))
+def bind(agent: str, tool_id: str, level: str) -> None:
+    emit(asdict(runtime.api.access.grant(agent, tool_id, level)))
+
+
+@cli.command()
+@click.argument("agent")
+@click.option("--tool", "tool_id", required=True)
+def unbind(agent: str, tool_id: str) -> None:
+    runtime.api.access.revoke(agent, tool_id)
+    emit({"agent_id": agent, "tool_id": tool_id, "bound": False})
+
+
+@cli.command("call")
+@click.argument("tool")
+@click.option("--agent", "agent_id", default="cli-agent")
+@click.option("--action", required=True)
+@click.option("--params", default="{}")
+def call_tool(tool: str, agent_id: str, action: str, params: str) -> None:
+    emit(runtime.api.call(agent_id, tool, action, json.loads(params)))
+
+
+@cli.group()
+def workflow() -> None:
+    """Manage workflows."""
+
+
+@workflow.command("create")
+@click.option("--name", required=True)
+@click.option("--steps", required=True)
+@click.option("--created-by", default="cli-agent")
+def workflow_create(name: str, steps: str, created_by: str) -> None:
+    emit(asdict(runtime.workflows.create(name, json.loads(steps), created_by)))
+
+
+@workflow.command("run")
+@click.argument("workflow_id")
+@click.option("--agent", "agent_id", default="cli-agent")
+def workflow_run(workflow_id: str, agent_id: str) -> None:
+    emit(runtime.pipeline.run(workflow_id, agent_id))
+
+
+@cli.command()
+def workflows() -> None:
+    emit([asdict(workflow) for workflow in runtime.store.workflows.values()])
+
+
+@cli.command()
+@click.argument("agent")
+def permissions(agent: str) -> None:
+    emit([asdict(binding) for binding in runtime.api.access.list_agent_permissions(agent)])
+
+
+@cli.command()
+@click.argument("agent")
+@click.option("--tool", "tool_id", required=True)
+@click.option("--level", required=True, type=click.Choice(["read", "write", "admin"]))
+def grant(agent: str, tool_id: str, level: str) -> None:
+    emit(asdict(runtime.api.access.grant(agent, tool_id, level)))
+
+
+@cli.command()
+def metrics() -> None:
+    emit(UsageMetrics(runtime.store).summary())
+
+
+@cli.command()
+def health() -> None:
+    emit(runtime.manager.health())
+
+
+@cli.command()
+@click.option("--port", default=8000)
+def serve(port: int) -> None:
+    uvicorn.run(create_app(), host="127.0.0.1", port=port)
+
+
+@cli.command()
+def demo() -> None:
+    runtime.manager.install_all_builtins()
+    for agent in ["Felix-CTO", "Agent-Alpha", "Felix-Jim"]:
+        runtime.store.register_agent(agent)
+    runtime.api.grant("Felix-CTO", "github", "admin")
+    runtime.api.grant("Felix-CTO", "jira", "write")
+    runtime.api.grant("Agent-Alpha", "github", "read")
+    runtime.api.grant("Agent-Alpha", "filesystem", "write")
+    runtime.api.grant("Felix-Jim", "slack", "write")
+    runtime.api.grant("Felix-Jim", "filesystem", "read")
+    calls = [
+        runtime.api.call("Felix-CTO", "github", "repos.list", {}),
+        runtime.api.call("Agent-Alpha", "filesystem", "file.read", {"path": "README.md"}),
+        runtime.api.call("Felix-Jim", "slack", "messages.send", {"channel": "#deploys", "text": "Deploy started"}),
+    ]
+    workflow = runtime.workflows.create(
+        "Deploy notification",
+        [
+            {"tool_id": "github", "action": "prs.create", "params": {"title": "Release Nexus"}},
+            {"tool_id": "slack", "action": "messages.send", "params": {"channel": "#deploys", "text": "PR created"}},
+            {"tool_id": "jira", "action": "tickets.update", "params": {"key": "NEX-1"}},
+        ],
+        created_by="Felix-CTO",
+    )
+    runtime.api.grant("Felix-CTO", "slack", "write")
+    workflow_results = runtime.pipeline.run(workflow.id, "Felix-CTO")
+    emit(
+        {
+            "agents": sorted(runtime.store.agents),
+            "calls": calls,
+            "workflow": asdict(workflow),
+            "workflow_results": workflow_results,
+            "metrics": UsageMetrics(runtime.store).summary(),
+            "audit": runtime.store.audit_events,
+        }
+    )
+
+
+if __name__ == "__main__":
+    cli()
