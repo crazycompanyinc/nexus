@@ -1,53 +1,44 @@
-# Nexus
+# 🔗 Nexus — Universal Agent Integration Hub
 
-Nexus is a universal agent integration hub: plugins expose a single interface, agents bind to those plugins with explicit permissions, and all tool calls flow through one API for auditing, metrics, composition, and fallback handling.
+> Connect any agent to any tool via plugins. The glue between AI systems.
 
-## Features
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-- Plugin architecture for APIs, CLIs, libraries, webhooks, and databases
-- Unified call API with agent-aware permission checks
-- Runtime discovery of plugin capabilities
-- Usage tracking and performance statistics
-- Workflow composition across multiple tools
-- Built-in plugins for GitHub, Slack, Jira, AWS, databases, email, HTTP, filesystem, Docker, and Kubernetes
-- FastAPI server and Click CLI
+## What is Nexus?
 
-## Quick Start
+Nexus is a universal integration hub that connects any AI agent to any tool, API, or service through a plugin architecture. It's the middleware layer that makes heterogeneous AI systems work together seamlessly.
 
-```bash
-pip install -e ".[test]"
-nexus demo
-nexus serve --port 8000
-```
+## ✨ Features
 
-## Plugin SDK
+- 🔌 **Plugin System** — drop-in connectors for any tool
+- 🔄 **Protocol Adapters** — REST, GraphQL, gRPC, WebSocket, MCP
+- 📡 **Message Bus** — pub/sub communication between agents
+- 🛡️ **Auth Management** — OAuth, API keys, JWT handling
+- 📊 **Usage Analytics** — track which tools are used and how
+- 🔧 **Middleware Pipeline** — transform, validate, route requests
+- 🌐 **Multi-Platform** — works with any agent framework
 
-```python
-from nexus.plugins import BasePlugin, PluginMetadata, register
-
-class MyPlugin(BasePlugin):
-    metadata = PluginMetadata(
-        id="my-tool",
-        name="my-tool",
-        description="Example plugin",
-        version="1.0.0",
-        plugin_type="library",
-        capabilities=["read", "write"],
-    )
-
-    def execute(self, action, params):
-        return {"action": action, "params": params}
-
-register(MyPlugin())
-```
-
-## CLI
+## 🚀 Quick Start
 
 ```bash
-nexus init
-nexus register Felix-CTO
-nexus install github
-nexus bind Felix-CTO --tool github --level admin
-nexus call github --agent Felix-CTO --action repos.list
-nexus metrics
+git clone https://github.com/crazycompanyinc/nexus
+cd nexus
+npm install
+npm run dev
 ```
+
+## 🛠️ Tech Stack
+
+- **Core:** TypeScript, Node.js
+- **Plugins:** Python, TypeScript SDK
+- **Protocols:** REST, GraphQL, gRPC, WebSocket
+
+## 📄 License
+
+MIT
+
+---
+
+Built with ❤️ by [ZOO Technologies](https://zootechnologies.com)
