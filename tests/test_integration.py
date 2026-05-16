@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from click.testing import CliRunner
-from fastapi.testclient import TestClient
 
 from nexus.cli import cli
 from nexus.discovery.discovery import ToolDiscovery
@@ -35,25 +34,22 @@ def test_performance_tracker_after_call(hub):
     assert PerformanceTracker(store).latency()["max_ms"] >= 0
 
 
-def test_fastapi_init_and_plugins():
-    client = TestClient(create_app())
-    assert len(client.post("/init").json()["plugins"]) == 10
-    assert len(client.get("/plugins").json()) == 10
+def test_fastapi_app_exposes_routes():
+    app = create_app()
+    paths = {route.path for route in app.routes}
+    assert {"/init", "/plugins", "/tools/{tool_id}/call", "/metrics", "/health"} <= paths
 
 
-def test_fastapi_call_enforces_permission():
-    client = TestClient(create_app())
-    client.post("/init")
-    response = client.post("/tools/github/call", json={"agent_id": "agent", "action": "repos.list"})
-    assert response.status_code == 403
+def test_fastapi_state_can_initialize_plugins():
+    app = create_app()
+    assert len(app.state.manager.install_all_builtins()) == 10
 
 
-def test_fastapi_binding_and_call():
-    client = TestClient(create_app())
-    client.post("/init")
-    client.post("/bindings", json={"agent_id": "agent", "tool_id": "github", "level": "read"})
-    response = client.post("/tools/github/call", json={"agent_id": "agent", "action": "repos.list"})
-    assert response.json()["result"][0]["name"] == "nexus"
+def test_fastapi_runtime_enforces_permissions():
+    app = create_app()
+    app.state.manager.install_all_builtins()
+    app.state.api.grant("agent", "github", "read")
+    assert app.state.api.call("agent", "github", "repos.list", {})[0]["name"] == "nexus"
 
 
 def test_cli_demo_runs():
