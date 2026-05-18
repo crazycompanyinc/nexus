@@ -97,6 +97,25 @@ def create_app() -> FastAPI:
     async def metrics() -> dict[str, Any]:
         return UsageMetrics(store).summary()
 
+    @app.get("/metrics/performance")
+    async def performance() -> dict[str, Any]:
+        from nexus.metrics.performance import PerformanceTracker
+        return PerformanceTracker(store).latency()
+
+    @app.get("/metrics/workflows")
+    async def workflow_metrics() -> dict[str, Any]:
+        total = len(store.workflows)
+        total_runs = sum(1 for e in store.audit_events if e.get("type") == "workflow.ran")
+        total_failures = sum(1 for e in store.audit_events if e.get("type") == "workflow.step_failed")
+        durations = [e.get("duration_ms", 0) for e in store.audit_events if e.get("type") == "workflow.ran" and e.get("duration_ms")]
+        avg_duration = round(sum(durations) / len(durations), 2) if durations else 0
+        return {
+            "total_workflows": total,
+            "total_runs": total_runs,
+            "total_step_failures": total_failures,
+            "avg_run_duration_ms": avg_duration,
+        }
+
     @app.get("/health")
     async def health() -> dict[str, Any]:
         return manager.health()

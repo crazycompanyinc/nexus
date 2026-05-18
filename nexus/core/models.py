@@ -100,6 +100,8 @@ class WorkflowStep:
     params: dict[str, Any] = field(default_factory=dict)
     condition: str | None = None
     fallback_tools: list[str] = field(default_factory=list)
+    max_retries: int = 0
+    retry_delay_ms: float = 100.0
 
 
 @dataclass(slots=True)
