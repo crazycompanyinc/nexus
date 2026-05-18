@@ -6,16 +6,26 @@ from typing import Any
 from nexus.core.models import AgentToolBinding, ToolCall, ToolPlugin, Workflow
 
 
+_DEFAULT_MAX_CALLS = 10_000
+_DEFAULT_MAX_AUDIT = 5_000
+
+
 class NexusStore:
     """Small in-memory store used by all local Nexus surfaces."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        max_calls: int = _DEFAULT_MAX_CALLS,
+        max_audit_events: int = _DEFAULT_MAX_AUDIT,
+    ) -> None:
         self.agents: set[str] = set()
         self.plugins: dict[str, ToolPlugin] = {}
         self.bindings: dict[tuple[str, str], AgentToolBinding] = {}
         self.calls: list[ToolCall] = []
         self.workflows: dict[str, Workflow] = {}
         self.audit_events: list[dict[str, Any]] = []
+        self._max_calls = max_calls
+        self._max_audit = max_audit_events
 
     def register_agent(self, agent_id: str) -> None:
         self.agents.add(agent_id)
@@ -35,6 +45,8 @@ class NexusStore:
 
     def record_call(self, call: ToolCall) -> ToolCall:
         self.calls.append(call)
+        if len(self.calls) > self._max_calls:
+            self.calls = self.calls[-self._max_calls:]
         return call
 
     def save_workflow(self, workflow: Workflow) -> Workflow:
@@ -44,6 +56,8 @@ class NexusStore:
     def audit(self, event_type: str, **payload: Any) -> dict[str, Any]:
         event = {"type": event_type, **payload}
         self.audit_events.append(event)
+        if len(self.audit_events) > self._max_audit:
+            self.audit_events = self.audit_events[-self._max_audit:]
         return event
 
     def snapshot(self) -> dict[str, Any]:

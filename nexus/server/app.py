@@ -75,7 +75,23 @@ def create_app() -> FastAPI:
 
     @app.post("/workflows/{workflow_id}/run")
     async def run_workflow(workflow_id: str, agent_id: str) -> dict[str, Any]:
-        return {"results": pipeline.run(workflow_id, agent_id)}
+        step_results = pipeline.run(workflow_id, agent_id)
+        return {
+            "results": [
+                {
+                    "step": r.step_index,
+                    "tool_id": r.tool_id,
+                    "action": r.action,
+                    "success": r.success,
+                    "result": r.result,
+                    "error": r.error,
+                    "duration_ms": r.duration_ms,
+                }
+                for r in step_results
+            ],
+            "succeeded": sum(1 for r in step_results if r.success),
+            "failed": sum(1 for r in step_results if not r.success),
+        }
 
     @app.get("/metrics")
     async def metrics() -> dict[str, Any]:

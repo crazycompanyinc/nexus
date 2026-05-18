@@ -108,7 +108,25 @@ def workflow_create(name: str, steps: str, created_by: str) -> None:
 @click.argument("workflow_id")
 @click.option("--agent", "agent_id", default="cli-agent")
 def workflow_run(workflow_id: str, agent_id: str) -> None:
-    emit(runtime.pipeline.run(workflow_id, agent_id))
+    step_results = runtime.pipeline.run(workflow_id, agent_id)
+    emit(
+        {
+            "results": [
+                {
+                    "step": r.step_index,
+                    "tool_id": r.tool_id,
+                    "action": r.action,
+                    "success": r.success,
+                    "result": r.result,
+                    "error": r.error,
+                    "duration_ms": r.duration_ms,
+                }
+                for r in step_results
+            ],
+            "succeeded": sum(1 for r in step_results if r.success),
+            "failed": sum(1 for r in step_results if not r.success),
+        }
+    )
 
 
 @cli.command()
@@ -178,7 +196,18 @@ def demo() -> None:
             "agents": sorted(runtime.store.agents),
             "calls": calls,
             "workflow": asdict(workflow),
-            "workflow_results": workflow_results,
+            "workflow_results": [
+                {
+                    "step": r.step_index,
+                    "tool_id": r.tool_id,
+                    "action": r.action,
+                    "success": r.success,
+                    "result": r.result,
+                    "error": r.error,
+                    "duration_ms": r.duration_ms,
+                }
+                for r in workflow_results
+            ],
             "metrics": UsageMetrics(runtime.store).summary(),
             "audit": runtime.store.audit_events,
         }

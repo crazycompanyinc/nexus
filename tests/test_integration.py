@@ -24,7 +24,28 @@ def test_usage_metrics_after_call(hub):
     store, _, api = hub
     api.grant("agent", "github", "read")
     api.call("agent", "github", "repos.list", {})
-    assert UsageMetrics(store).summary()["by_tool"]["github"] == 1
+    summary = UsageMetrics(store).summary()
+    assert summary["by_tool"]["github"] == 1
+    assert "latency_ms" in summary
+    assert summary["latency_ms"]["count"] >= 1
+
+
+def test_latency_percentiles():
+    from nexus.metrics.metrics import UsageMetrics
+    stats = UsageMetrics._latency_stats([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+    assert stats["count"] == 10
+    assert stats["min"] == 10
+    assert stats["max"] == 100
+    assert stats["avg"] == 55.0
+    assert stats["p50"] > 0
+    assert stats["p95"] >= stats["p50"]
+
+
+def test_latency_percentiles_empty():
+    from nexus.metrics.metrics import UsageMetrics
+    stats = UsageMetrics._latency_stats([])
+    assert stats["count"] == 0
+    assert stats["avg"] == 0.0
 
 
 def test_performance_tracker_after_call(hub):

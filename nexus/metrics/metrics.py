@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections import Counter, defaultdict
 from typing import Any
 
@@ -14,20 +15,59 @@ class UsageMetrics:
         by_tool = Counter(call.tool_id for call in self.store.calls)
         by_agent = Counter(call.agent_id for call in self.store.calls)
         by_status = Counter(call.status for call in self.store.calls)
+        durations = [call.duration_ms for call in self.store.calls if call.duration_ms > 0]
         return {
             "total_calls": len(self.store.calls),
             "by_tool": dict(by_tool),
             "by_agent": dict(by_agent),
             "by_status": dict(by_status),
+            "latency_ms": self._latency_stats(durations),
         }
 
     def tool_usage(self, tool_id: str) -> dict[str, Any]:
         calls = [call for call in self.store.calls if call.tool_id == tool_id]
-        return {"tool_id": tool_id, "calls": len(calls), "agents": sorted({call.agent_id for call in calls})}
+        durations = [call.duration_ms for call in calls if call.duration_ms > 0]
+        return {
+            "tool_id": tool_id,
+            "calls": len(calls),
+            "agents": sorted({call.agent_id for call in calls}),
+            "latency_ms": self._latency_stats(durations),
+        }
 
     def agent_usage(self, agent_id: str) -> dict[str, Any]:
         calls = [call for call in self.store.calls if call.agent_id == agent_id]
         actions: dict[str, list[str]] = defaultdict(list)
         for call in calls:
             actions[call.tool_id].append(call.action)
-        return {"agent_id": agent_id, "calls": len(calls), "actions": dict(actions)}
+        durations = [call.duration_ms for call in calls if call.duration_ms > 0]
+        return {
+            "agent_id": agent_id,
+            "calls": len(calls),
+            "actions": dict(actions),
+            "latency_ms": self._latency_stats(durations),
+        }
+
+    @staticmethod
+    def _latency_stats(durations: list[float]) -> dict[str, float]:
+        if not durations:
+            return {"count": 0, "avg": 0.0, "p50": 0.0, "p95": 0.0, "p99": 0.0, "min": 0.0, "max": 0.0}
+        sorted_d = sorted(durations)
+        n = len(sorted_d)
+
+        def percentile(p: float) -> float:
+            if n == 1:
+                return sorted_d[0]
+            k = (p / 100.0) * (n - 1)
+            f = math.floor(k)
+            c = min(f + 1, n - 1)
+            return sorted_d[f] + (k - f) * (sorted_d[c] - sorted_d[f])
+
+        return {
+            "count": n,
+            "avg": round(sum(sorted_d) / n, 3),
+            "p50": round(percentile(50), 3),
+            "p95": round(percentile(95), 3),
+            "p99": round(percentile(99), 3),
+            "min": round(sorted_d[0], 3),
+            "max": round(sorted_d[-1], 3),
+        }

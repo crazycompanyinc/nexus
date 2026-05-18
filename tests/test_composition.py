@@ -24,7 +24,8 @@ def test_pipeline_runs_workflow(hub):
     api.grant("agent", "github", "read")
     workflow = WorkflowBuilder(store).create("wf", [{"tool_id": "github", "action": "repos.list"}], "agent")
     results = Pipeline(api, store).run(workflow.id, "agent")
-    assert results[0][0]["name"] == "nexus"
+    assert results[0].success
+    assert results[0].result[0]["name"] == "nexus"
 
 
 def test_pipeline_resolves_previous(hub):
@@ -40,7 +41,9 @@ def test_pipeline_resolves_previous(hub):
         "agent",
     )
     results = Pipeline(api, store).run(workflow.id, "agent")
-    assert results[1]["sent"]
+    assert results[0].success
+    assert results[1].success
+    assert results[1].result["sent"]
 
 
 def test_api_fallback_uses_alternative_plugin(hub):

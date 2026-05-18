@@ -36,6 +36,22 @@ def test_store_records_call():
     assert store.calls == [call]
 
 
+def test_store_calls_bounded():
+    store = NexusStore(max_calls=3)
+    for i in range(5):
+        store.record_call(ToolCall("a1", "p1", "read", {}))
+    assert len(store.calls) == 3
+
+
+def test_store_audit_bounded():
+    store = NexusStore(max_audit_events=2)
+    store.audit("evt1")
+    store.audit("evt2")
+    store.audit("evt3")
+    assert len(store.audit_events) == 2
+    assert store.audit_events[-1]["type"] == "evt3"
+
+
 def test_store_saves_workflow():
     store = NexusStore()
     workflow = Workflow("w1", "wf", "desc", [WorkflowStep("p1", "read")])
