@@ -48,6 +48,43 @@ class WorkflowBuilder:
         self.store.audit("workflow.created", workflow_id=workflow.id, created_by=created_by)
         return workflow
 
+    def get(self, workflow_id: str) -> Workflow | None:
+        return self.store.workflows.get(workflow_id)
+
+    def update(
+        self,
+        workflow_id: str,
+        name: str | None = None,
+        description: str | None = None,
+        status: str | None = None,
+        steps: list[dict[str, Any]] | None = None,
+    ) -> Workflow:
+        workflow = self.store.workflows[workflow_id]
+        if name is not None:
+            workflow.name = name
+        if description is not None:
+            workflow.description = description
+        if status is not None:
+            workflow.status = status
+        if steps is not None:
+            workflow.steps = [
+                WorkflowStep(
+                    tool_id=step["tool_id"],
+                    action=step["action"],
+                    params=step.get("params", {}),
+                    condition=step.get("condition"),
+                    fallback_tools=step.get("fallback_tools", []),
+                    max_retries=step.get("max_retries", 0),
+                    retry_delay_ms=step.get("retry_delay_ms", 100.0),
+                )
+                for step in steps
+            ]
+        self.store.audit("workflow.updated", workflow_id=workflow.id)
+        return workflow
+
+    def list(self) -> list[Workflow]:
+        return list(self.store.workflows.values())
+
 
 @dataclass
 class StepResult:
@@ -65,7 +102,7 @@ class Pipeline:
         self.api = api
         self.store = store
 
-    def run(self, workflow_id: str, agent_id: str) -> list[StepResult]:
+    def run(self, workflow_id: str, agent_id: str, fail_fast: bool = False) -> list[StepResult]:
         from time import perf_counter, sleep
         workflow = self.store.workflows[workflow_id]
         results: list[StepResult] = []
@@ -107,6 +144,9 @@ class Pipeline:
             if not step_result.success:
                 self.store.audit("workflow.step_failed", workflow_id=workflow_id, step_index=idx, tool_id=step.tool_id, action=step.action, error=step_result.error, attempts=max_attempts)
             results.append(step_result)
+            if fail_fast and not step_result.success:
+                logger.error("Workflow %s fail_fast: stopping after step %d failure", workflow_id, idx)
+                break
         run_duration_ms = (perf_counter() - run_started) * 1000
         succeeded = sum(1 for r in results if r.success)
         self.store.audit("workflow.ran", workflow_id=workflow_id, agent_id=agent_id, steps=len(results), succeeded=succeeded, failed=len(results) - succeeded, duration_ms=round(run_duration_ms, 2))

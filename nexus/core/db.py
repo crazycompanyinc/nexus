@@ -60,6 +60,15 @@ class NexusStore:
             self.audit_events = self.audit_events[-self._max_audit:]
         return event
 
+    def __len__(self) -> int:
+        return len(self.calls)
+
+    def __bool__(self) -> bool:
+        return True
+
+    def recent_calls(self, n: int = 10) -> list[ToolCall]:
+        return self.calls[-n:]
+
     def snapshot(self) -> dict[str, Any]:
         return {
             "agents": sorted(self.agents),

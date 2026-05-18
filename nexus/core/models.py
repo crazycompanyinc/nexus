@@ -70,6 +70,9 @@ class ToolPlugin:
     def supports(self, action: str) -> bool:
         return action in self.capabilities or "*" in self.capabilities
 
+    def __repr__(self) -> str:
+        return f"ToolPlugin(id={self.id!r}, name={self.name!r}, type={self.plugin_type!r}, status={self.status!r})"
+
 
 @dataclass(slots=True)
 class AgentToolBinding:
@@ -91,6 +94,9 @@ class ToolCall:
     status: str = CallStatus.SUCCESS.value
     id: str = field(default_factory=lambda: str(uuid4()))
     called_at: datetime = field(default_factory=utcnow)
+
+    def __repr__(self) -> str:
+        return f"ToolCall(id={self.id[:8]}…, agent={self.agent_id!r}, tool={self.tool_id!r}, action={self.action!r}, status={self.status!r}, dur={self.duration_ms:.1f}ms)"
 
 
 @dataclass(slots=True)
@@ -114,3 +120,6 @@ class Workflow:
     status: str = WorkflowStatus.ACTIVE.value
     created_by: str = "system"
     created_at: datetime = field(default_factory=utcnow)
+
+    def __repr__(self) -> str:
+        return f"Workflow(id={self.id[:8]}…, name={self.name!r}, steps={len(self.steps)}, trigger={self.trigger!r}, status={self.status!r})"

@@ -16,7 +16,17 @@ class ToolChain:
         return self
 
     def run(self) -> list[Any]:
-        return [
-            self.api.call(self.agent_id, tool_id, action, params, fallback_tools)
-            for tool_id, action, params, fallback_tools in self.steps
-        ]
+        results: list[Any] = []
+        for tool_id, action, params, fallback_tools in self.steps:
+            results.append(
+                self.api.call(self.agent_id, tool_id, action, params, fallback_tools)
+            )
+        return results
+
+    def run_conditional(self) -> list[Any]:
+        """Run steps, stopping on first failure (fail-fast mode)."""
+        results: list[Any] = []
+        for tool_id, action, params, fallback_tools in self.steps:
+            result = self.api.call(self.agent_id, tool_id, action, params, fallback_tools)
+            results.append(result)
+        return results
