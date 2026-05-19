@@ -82,6 +82,9 @@ class AgentToolBinding:
     config: dict[str, Any] = field(default_factory=dict)
     bound_at: datetime = field(default_factory=utcnow)
 
+    def __repr__(self) -> str:
+        return f"AgentToolBinding(agent={self.agent_id!r}, tool={self.tool_id!r}, perm={self.permissions!r})"
+
 
 @dataclass(slots=True)
 class ToolCall:
@@ -108,6 +111,9 @@ class WorkflowStep:
     fallback_tools: list[str] = field(default_factory=list)
     max_retries: int = 0
     retry_delay_ms: float = 100.0
+
+    def __repr__(self) -> str:
+        return f"WorkflowStep(tool={self.tool_id!r}, action={self.action!r}, retries={self.max_retries})"
 
 
 @dataclass(slots=True)

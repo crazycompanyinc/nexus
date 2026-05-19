@@ -96,6 +96,10 @@ class StepResult:
     duration_ms: float = 0.0
     success: bool = True
 
+    def __repr__(self) -> str:
+        status = "ok" if self.success else "FAIL"
+        return f"StepResult(#{self.step_index}, {self.tool_id}.{self.action}, {status}, {self.duration_ms:.1f}ms)"
+
 
 class Pipeline:
     def __init__(self, api: UnifiedToolAPI, store: NexusStore) -> None:

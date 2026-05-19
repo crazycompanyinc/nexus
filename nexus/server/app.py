@@ -74,8 +74,8 @@ def create_app() -> FastAPI:
         return asdict(workflows.create(request.name, request.steps, request.created_by, request.description))
 
     @app.post("/workflows/{workflow_id}/run")
-    async def run_workflow(workflow_id: str, agent_id: str) -> dict[str, Any]:
-        step_results = pipeline.run(workflow_id, agent_id)
+    async def run_workflow(workflow_id: str, agent_id: str, fail_fast: bool = False) -> dict[str, Any]:
+        step_results = pipeline.run(workflow_id, agent_id, fail_fast=fail_fast)
         return {
             "results": [
                 {
@@ -92,6 +92,17 @@ def create_app() -> FastAPI:
             "succeeded": sum(1 for r in step_results if r.success),
             "failed": sum(1 for r in step_results if not r.success),
         }
+
+    @app.delete("/workflows/{workflow_id}")
+    async def delete_workflow(workflow_id: str) -> dict[str, Any]:
+        if not store.delete_workflow(workflow_id):
+            raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+        return {"deleted": True, "workflow_id": workflow_id}
+
+    @app.delete("/bindings/{agent_id}/{tool_id}")
+    async def unbind(agent_id: str, tool_id: str) -> dict[str, Any]:
+        api.access.revoke(agent_id, tool_id)
+        return {"revoked": True, "agent_id": agent_id, "tool_id": tool_id}
 
     @app.get("/metrics")
     async def metrics() -> dict[str, Any]:

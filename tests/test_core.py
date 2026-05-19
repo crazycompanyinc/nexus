@@ -59,6 +59,24 @@ def test_store_saves_workflow():
     assert store.workflows["w1"].name == "wf"
 
 
+def test_store_get_workflow():
+    store = NexusStore()
+    workflow = Workflow("w1", "wf", "desc", [WorkflowStep("p1", "read")])
+    store.save_workflow(workflow)
+    assert store.get_workflow("w1") is not None
+    assert store.get_workflow("w1").name == "wf"
+    assert store.get_workflow("nonexistent") is None
+
+
+def test_store_delete_workflow():
+    store = NexusStore()
+    workflow = Workflow("w1", "wf", "desc", [WorkflowStep("p1", "read")])
+    store.save_workflow(workflow)
+    assert store.delete_workflow("w1") is True
+    assert store.get_workflow("w1") is None
+    assert store.delete_workflow("w1") is False
+
+
 def test_store_snapshot_contains_sections():
     store = NexusStore()
     snapshot = store.snapshot()
@@ -68,3 +86,19 @@ def test_store_snapshot_contains_sections():
 def test_tool_plugin_supports_wildcard():
     plugin = ToolPlugin("p1", "P1", "desc", "1", "api", ["*"])
     assert plugin.supports("anything")
+
+
+def test_agent_tool_binding_repr():
+    binding = AgentToolBinding("a1", "p1", "read")
+    r = repr(binding)
+    assert "a1" in r
+    assert "p1" in r
+    assert "read" in r
+
+
+def test_workflow_step_repr():
+    step = WorkflowStep("p1", "read", max_retries=3)
+    r = repr(step)
+    assert "p1" in r
+    assert "read" in r
+    assert "3" in r

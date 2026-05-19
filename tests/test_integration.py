@@ -83,3 +83,69 @@ def test_cli_init_lists_plugins():
     result = CliRunner().invoke(cli, ["init"])
     assert result.exit_code == 0
     assert "github" in result.output
+
+
+def test_fastapi_delete_workflow():
+    from starlette.testclient import TestClient
+    app = create_app()
+    app.state.manager.install_all_builtins()
+    client = TestClient(app)
+    # Create a workflow
+    resp = client.post("/workflows", json={
+        "name": "test-wf",
+        "steps": [{"tool_id": "github", "action": "repos.list"}],
+        "created_by": "agent",
+    })
+    wf_id = resp.json()["id"]
+    # Delete it
+    resp = client.delete(f"/workflows/{wf_id}")
+    assert resp.status_code == 200
+    assert resp.json()["deleted"] is True
+    # Deleting again should 404
+    resp = client.delete(f"/workflows/{wf_id}")
+    assert resp.status_code == 404
+
+
+def test_fastapi_unbind():
+    from starlette.testclient import TestClient
+    app = create_app()
+    app.state.manager.install_all_builtins()
+    client = TestClient(app)
+    # Bind then unbind
+    client.post("/bindings", json={"agent_id": "a1", "tool_id": "github", "level": "read"})
+    resp = client.delete("/bindings/a1/github")
+    assert resp.status_code == 200
+    assert resp.json()["revoked"] is True
+
+
+def test_fastapi_workflow_run_fail_fast():
+    from starlette.testclient import TestClient
+    app = create_app()
+    app.state.manager.install_all_builtins()
+    client = TestClient(app)
+    app.state.api.grant("agent", "github", "read")
+    resp = client.post("/workflows", json={
+        "name": "ff-wf",
+        "steps": [
+            {"tool_id": "github", "action": "repos.list"},
+            {"tool_id": "github", "action": "nonexistent.action"},
+            {"tool_id": "github", "action": "repos.list"},
+        ],
+        "created_by": "agent",
+    })
+    wf_id = resp.json()["id"]
+    resp = client.post(f"/workflows/{wf_id}/run?agent_id=agent&fail_fast=true")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["failed"] == 1
+    assert len(data["results"]) == 2  # stopped after 2nd step failed
+
+
+def test_step_result_repr():
+    from nexus.composition.workflow import StepResult
+    ok = StepResult(step_index=0, tool_id="p1", action="read", success=True, duration_ms=1.5)
+    assert "ok" in repr(ok)
+    assert "p1" in repr(ok)
+    fail = StepResult(step_index=1, tool_id="p2", action="write", success=False, duration_ms=3.2, error="boom")
+    assert "FAIL" in repr(fail)
+    assert "boom" not in repr(fail)  # repr doesn't include error detail

@@ -53,6 +53,15 @@ class NexusStore:
         self.workflows[workflow.id] = workflow
         return workflow
 
+    def get_workflow(self, workflow_id: str) -> Workflow | None:
+        return self.workflows.get(workflow_id)
+
+    def delete_workflow(self, workflow_id: str) -> bool:
+        if workflow_id in self.workflows:
+            del self.workflows[workflow_id]
+            return True
+        return False
+
     def audit(self, event_type: str, **payload: Any) -> dict[str, Any]:
         event = {"type": event_type, **payload}
         self.audit_events.append(event)
