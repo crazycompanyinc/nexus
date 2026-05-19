@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from typing import Any
 
 from nexus.core.db import NexusStore
@@ -11,13 +12,19 @@ class UsageMetrics:
     def __init__(self, store: NexusStore) -> None:
         self.store = store
 
-    def summary(self) -> dict[str, Any]:
-        by_tool = Counter(call.tool_id for call in self.store.calls)
-        by_agent = Counter(call.agent_id for call in self.store.calls)
-        by_status = Counter(call.status for call in self.store.calls)
-        durations = [call.duration_ms for call in self.store.calls if call.duration_ms > 0]
+    def summary(
+        self,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> dict[str, Any]:
+        calls = self._filter_calls(since=since, until=until)
+        by_tool = Counter(call.tool_id for call in calls)
+        by_agent = Counter(call.agent_id for call in calls)
+        by_status = Counter(call.status for call in calls)
+        durations = [call.duration_ms for call in calls if call.duration_ms > 0]
         return {
-            "total_calls": len(self.store.calls),
+            "total_calls": len(calls),
             "by_tool": dict(by_tool),
             "by_agent": dict(by_agent),
             "by_status": dict(by_status),
