@@ -80,7 +80,7 @@ def test_store_delete_workflow():
 def test_store_snapshot_contains_sections():
     store = NexusStore()
     snapshot = store.snapshot()
-    assert set(snapshot) == {"agents", "plugins", "bindings", "calls", "workflows", "audit_events"}
+    assert set(snapshot) == {"agents", "plugins", "bindings", "calls", "workflows", "audit_events", "calls_total", "audit_total"}
 
 
 def test_tool_plugin_supports_wildcard():
