@@ -76,16 +76,20 @@ class NexusStore:
         return True
 
     def recent_calls(self, n: int = 10) -> list[ToolCall]:
-        return self.calls[-n:]
+        return list(self.calls)[-n:]
 
-    def snapshot(self) -> dict[str, Any]:
+    def snapshot(self, *, call_limit: int = 100, audit_limit: int = 100) -> dict[str, Any]:
+        all_calls = list(self.calls)
+        all_audit = list(self.audit_events)
         return {
             "agents": sorted(self.agents),
             "plugins": [self._to_dict(plugin) for plugin in self.plugins.values()],
             "bindings": [self._to_dict(binding) for binding in self.bindings.values()],
-            "calls": [self._to_dict(call) for call in self.calls],
+            "calls": [self._to_dict(call) for call in all_calls[-call_limit:]],
+            "calls_total": len(all_calls),
             "workflows": [self._to_dict(workflow) for workflow in self.workflows.values()],
-            "audit_events": list(self.audit_events),
+            "audit_events": all_audit[-audit_limit:],
+            "audit_total": len(all_audit),
         }
 
     @staticmethod
