@@ -127,3 +127,119 @@ def test_metrics_performance_endpoint():
     app = create_app()
     paths = {route.path for route in app.routes}
     assert "/metrics/performance" in paths
+
+
+# ── OMEGA Evolution Cycle — New Tests ──
+
+def test_stepresult_bool_true():
+    """StepResult with success=True is truthy."""
+    from nexus.composition.workflow import StepResult
+    r = StepResult(step_index=0, tool_id="t", action="a", success=True)
+    assert bool(r) is True
+    assert r  # truthy check
+
+
+def test_stepresult_bool_false():
+    """StepResult with success=False is falsy."""
+    from nexus.composition.workflow import StepResult
+    r = StepResult(step_index=0, tool_id="t", action="a", success=False, error="fail")
+    assert bool(r) is False
+    assert not r  # falsy check
+
+
+def test_stepresult_repr():
+    """StepResult repr includes status and duration."""
+    from nexus.composition.workflow import StepResult
+    r = StepResult(step_index=1, tool_id="t", action="a", success=True, duration_ms=42.5)
+    rep = repr(r)
+    assert "#1" in rep
+    assert "ok" in rep
+    assert "42.5" in rep
+
+
+def test_store_list_workflows():
+    """NexusStore.list_workflows returns all saved workflows."""
+    from nexus.core.db import NexusStore
+    from nexus.core.models import Workflow
+    store = NexusStore()
+    assert store.list_workflows() == []
+    wf = Workflow("w1", "wf", "desc", [])
+    store.save_workflow(wf)
+    wfs = store.list_workflows()
+    assert len(wfs) == 1
+    assert wfs[0].name == "wf"
+
+
+def test_workflow_builder_delete(hub):
+    """WorkflowBuilder.delete removes a workflow."""
+    store, _, _ = hub
+    builder = WorkflowBuilder(store)
+    wf = builder.create("wf", [{"tool_id": "github", "action": "repos.list"}], "agent")
+    assert builder.delete(wf.id) is True
+    assert builder.get(wf.id) is None
+    assert builder.delete("nonexistent") is False
+
+
+def test_tool_chain_run_conditional_fail_fast(hub):
+    """ToolChain.run_conditional with fail_fast=True raises on first failure."""
+    import pytest
+    from nexus.composition.chain import ToolChain
+    _, _, api = hub
+    api.grant("agent", "github", "read")
+    chain = ToolChain(api, "agent").add("github", "unknown.action")
+    with pytest.raises(Exception):
+        chain.run_conditional(fail_fast=True)
+
+
+def test_tool_chain_run_conditional_no_fail_fast(hub):
+    """ToolChain.run_conditional with fail_fast=False collects errors."""
+    from nexus.composition.chain import ToolChain
+    _, _, api = hub
+    api.grant("agent", "github", "read")
+    chain = ToolChain(api, "agent").add("github", "unknown.action")
+    results = chain.run_conditional(fail_fast=False)
+    assert len(results) == 1
+    assert "error" in results[0]
+
+
+def test_api_list_workflows_endpoint():
+    """GET /workflows lists all workflows."""
+    from nexus.server.app import create_app
+    app = create_app()
+    paths = {route.path for route in app.routes}
+    assert "/workflows" in paths
+
+
+def test_api_get_workflow_endpoint():
+    """GET /workflows/{id} returns a single workflow."""
+    from nexus.server.app import create_app
+    app = create_app()
+    paths = {route.path for route in app.routes}
+    # The route pattern includes {workflow_id}
+    assert any("workflow_id" in r.path for r in app.routes)
+
+
+def test_api_update_workflow_endpoint():
+    """PUT /workflows/{id} updates a workflow."""
+    from nexus.server.app import create_app
+    app = create_app()
+    methods = {r.path: r.methods for r in app.routes}
+    # Check PUT method exists on workflow routes
+    wf_routes = [r for r in app.routes if "workflow_id" in r.path]
+    assert any(r.methods and "PUT" in r.methods for r in wf_routes)
+
+
+def test_api_agent_permissions_endpoint():
+    """GET /agents/{agent_id}/permissions lists agent permissions."""
+    from nexus.server.app import create_app
+    app = create_app()
+    paths = {route.path for route in app.routes}
+    assert any("permissions" in p for p in paths)
+
+
+def test_api_audit_trail_endpoint():
+    """GET /audit returns audit trail."""
+    from nexus.server.app import create_app
+    app = create_app()
+    paths = {route.path for route in app.routes}
+    assert "/audit" in paths
