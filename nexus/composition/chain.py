@@ -23,10 +23,19 @@ class ToolChain:
             )
         return results
 
-    def run_conditional(self) -> list[Any]:
-        """Run steps, stopping on first failure (fail-fast mode)."""
+    def run_conditional(self, fail_fast: bool = True) -> list[Any]:
+        """Run steps, optionally stopping on first failure (fail-fast mode).
+
+        Args:
+            fail_fast: If True, stop execution on first failed step.
+        """
         results: list[Any] = []
         for tool_id, action, params, fallback_tools in self.steps:
-            result = self.api.call(self.agent_id, tool_id, action, params, fallback_tools)
-            results.append(result)
+            try:
+                result = self.api.call(self.agent_id, tool_id, action, params, fallback_tools)
+                results.append(result)
+            except Exception as exc:
+                if fail_fast:
+                    raise
+                results.append({"error": str(exc)})
         return results

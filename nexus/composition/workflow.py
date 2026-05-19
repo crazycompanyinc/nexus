@@ -96,9 +96,8 @@ class StepResult:
     duration_ms: float = 0.0
     success: bool = True
 
-    def __repr__(self) -> str:
-        status = "ok" if self.success else "FAIL"
-        return f"StepResult(#{self.step_index}, {self.tool_id}.{self.action}, {status}, {self.duration_ms:.1f}ms)"
+    def __bool__(self) -> bool:
+        return self.success
 
 
 class Pipeline:
