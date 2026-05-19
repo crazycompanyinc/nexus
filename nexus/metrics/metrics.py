@@ -78,3 +78,16 @@ class UsageMetrics:
             "min": round(sorted_d[0], 3),
             "max": round(sorted_d[-1], 3),
         }
+
+    def _filter_calls(
+        self,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list:
+        calls = list(self.store.calls)
+        if since is not None:
+            calls = [c for c in calls if c.called_at >= since]
+        if until is not None:
+            calls = [c for c in calls if c.called_at <= until]
+        return calls
