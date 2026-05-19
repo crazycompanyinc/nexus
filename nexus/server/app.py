@@ -99,6 +99,38 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
         return {"deleted": True, "workflow_id": workflow_id}
 
+    @app.get("/workflows")
+    async def list_workflows() -> list[dict[str, Any]]:
+        return [asdict(wf) for wf in workflows.list()]
+
+    @app.get("/workflows/{workflow_id}")
+    async def get_workflow(workflow_id: str) -> dict[str, Any]:
+        wf = workflows.get(workflow_id)
+        if wf is None:
+            raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+        return asdict(wf)
+
+    @app.put("/workflows/{workflow_id}")
+    async def update_workflow(workflow_id: str, request: WorkflowRequest) -> dict[str, Any]:
+        try:
+            updated = workflows.update(
+                workflow_id,
+                name=request.name,
+                description=request.description,
+                steps=request.steps,
+            )
+            return asdict(updated)
+        except KeyError:
+            raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+
+    @app.get("/agents/{agent_id}/permissions")
+    async def agent_permissions(agent_id: str) -> list[dict[str, Any]]:
+        return [asdict(b) for b in api.access.list_agent_permissions(agent_id)]
+
+    @app.get("/audit")
+    async def audit_trail(limit: int = 50) -> list[dict[str, Any]]:
+        return store.audit_events[-limit:]
+
     @app.delete("/bindings/{agent_id}/{tool_id}")
     async def unbind(agent_id: str, tool_id: str) -> dict[str, Any]:
         api.access.revoke(agent_id, tool_id)
