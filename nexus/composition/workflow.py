@@ -99,6 +99,10 @@ class StepResult:
     def __bool__(self) -> bool:
         return self.success
 
+    def __repr__(self) -> str:
+        status = "ok" if self.success else "FAIL"
+        return f"StepResult(#{self.step_index}, {self.tool_id}.{self.action}, {status}, {self.duration_ms:.1f}ms)"
+
 
 class Pipeline:
     def __init__(self, api: UnifiedToolAPI, store: NexusStore) -> None:

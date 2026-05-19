@@ -62,6 +62,9 @@ class NexusStore:
             return True
         return False
 
+    def list_workflows(self) -> list[Workflow]:
+        return list(self.workflows.values())
+
     def audit(self, event_type: str, **payload: Any) -> dict[str, Any]:
         event = {"type": event_type, **payload}
         self.audit_events.append(event)
