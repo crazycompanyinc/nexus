@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
@@ -21,9 +22,9 @@ class NexusStore:
         self.agents: set[str] = set()
         self.plugins: dict[str, ToolPlugin] = {}
         self.bindings: dict[tuple[str, str], AgentToolBinding] = {}
-        self.calls: list[ToolCall] = []
+        self.calls: deque[ToolCall] = deque(maxlen=max_calls)
         self.workflows: dict[str, Workflow] = {}
-        self.audit_events: list[dict[str, Any]] = []
+        self.audit_events: deque[dict[str, Any]] = deque(maxlen=max_audit_events)
         self._max_calls = max_calls
         self._max_audit = max_audit_events
 
@@ -45,8 +46,6 @@ class NexusStore:
 
     def record_call(self, call: ToolCall) -> ToolCall:
         self.calls.append(call)
-        if len(self.calls) > self._max_calls:
-            self.calls = self.calls[-self._max_calls:]
         return call
 
     def save_workflow(self, workflow: Workflow) -> Workflow:
@@ -68,8 +67,6 @@ class NexusStore:
     def audit(self, event_type: str, **payload: Any) -> dict[str, Any]:
         event = {"type": event_type, **payload}
         self.audit_events.append(event)
-        if len(self.audit_events) > self._max_audit:
-            self.audit_events = self.audit_events[-self._max_audit:]
         return event
 
     def __len__(self) -> int:
