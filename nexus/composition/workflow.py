@@ -85,6 +85,9 @@ class WorkflowBuilder:
     def list(self) -> list[Workflow]:
         return list(self.store.workflows.values())
 
+    def delete(self, workflow_id: str) -> bool:
+        return self.store.delete_workflow(workflow_id)
+
 
 @dataclass
 class StepResult:
