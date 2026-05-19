@@ -33,7 +33,7 @@ def test_store_unbinds_tool():
 def test_store_records_call():
     store = NexusStore()
     call = store.record_call(ToolCall("a1", "p1", "read", {}))
-    assert store.calls == [call]
+    assert list(store.calls) == [call]
 
 
 def test_store_calls_bounded():
