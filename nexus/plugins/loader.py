@@ -33,10 +33,11 @@ class PluginLoader:
         module = importlib.import_module(module_name)
         return self._plugins_from_module(module)
 
-    def load_directory(self, directory: str | Path) -> list[Plugin]:
+    def load_directory(self, directory: str | Path, *, recursive: bool = True) -> list[Plugin]:
         directory = Path(directory)
         plugins: list[Plugin] = []
-        for path in sorted(directory.glob("*.py")):
+        pattern = "**/*.py" if recursive else "*.py"
+        for path in sorted(directory.glob(pattern)):
             if path.name.startswith("_"):
                 continue
             spec_name = f"nexus_hot_{path.stem}"

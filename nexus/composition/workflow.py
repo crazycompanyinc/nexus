@@ -59,7 +59,9 @@ class WorkflowBuilder:
         status: str | None = None,
         steps: list[dict[str, Any]] | None = None,
     ) -> Workflow:
-        workflow = self.store.workflows[workflow_id]
+        workflow = self.store.workflows.get(workflow_id)
+        if workflow is None:
+            raise KeyError(f"Workflow not found: {workflow_id}")
         if name is not None:
             workflow.name = name
         if description is not None:
