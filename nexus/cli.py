@@ -71,12 +71,22 @@ def register(agent_id: str) -> None:
 @cli.command()
 @click.argument("plugin")
 def install(plugin: str) -> None:
+    """Install a built-in plugin by ID.
+
+    Args:
+        plugin: The plugin identifier to install.
+    """
     emit(asdict(runtime.manager.install_builtin(plugin)))
 
 
 @cli.command("plugins")
 @click.option("--discover", is_flag=True)
 def list_plugins(discover: bool) -> None:
+    """List installed plugins or discover available tools.
+
+    Args:
+        discover: If set, show all discoverable tools instead of installed plugins.
+    """
     if discover:
         emit(ToolDiscovery(runtime.manager).available_tools())
     else:
