@@ -352,6 +352,18 @@ def create_app() -> FastAPI:
             "avg_run_duration_ms": avg_duration,
         }
 
+    @app.get("/metrics/agents")
+    async def agent_performance() -> dict[str, Any]:
+        """Get latency performance metrics broken down by agent."""
+        from nexus.metrics.performance import PerformanceTracker
+        return PerformanceTracker(store).by_agent()
+
+    @app.get("/metrics/tools")
+    async def tool_performance() -> dict[str, Any]:
+        """Get latency performance metrics broken down by tool."""
+        from nexus.metrics.performance import PerformanceTracker
+        return PerformanceTracker(store).by_tool()
+
     @app.get("/health")
     async def health() -> dict[str, Any]:
         return manager.health()

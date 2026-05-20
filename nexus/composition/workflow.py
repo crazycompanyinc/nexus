@@ -201,11 +201,39 @@ class StepResult:
 
 
 class Pipeline:
+    """Executes workflows by running each step through the UnifiedToolAPI.
+
+    Supports fail_fast mode, per-step retry with exponential backoff,
+    conditional step execution, and parameter resolution from previous
+    step results.
+    """
+
     def __init__(self, api: UnifiedToolAPI, store: NexusStore) -> None:
+        """Initialize the Pipeline.
+
+        Args:
+            api: UnifiedToolAPI instance for executing tool calls.
+            store: NexusStore instance for persistence and workflow retrieval.
+        """
         self.api = api
         self.store = store
 
     def run(self, workflow_id: str, agent_id: str, fail_fast: bool = False) -> list[StepResult]:
+        """Execute a workflow by running each step in sequence.
+
+        Steps can be conditionally skipped based on previous step outcomes.
+        Each step is retried up to max_retries times with exponential backoff.
+        Parameter references ($previous, $all, $stepN) are resolved from
+        previous step results.
+
+        Args:
+            workflow_id: The workflow to execute.
+            agent_id: The agent executing the workflow.
+            fail_fast: If True, stop on first step failure.
+
+        Returns:
+            List of StepResult instances, one per executed step.
+        """
         from time import perf_counter, sleep
         workflow = self.store.workflows[workflow_id]
         results: list[StepResult] = []
