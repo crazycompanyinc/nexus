@@ -163,6 +163,12 @@ def workflow_create(name: str, steps: str, created_by: str) -> None:
 @click.argument("workflow_id")
 @click.option("--agent", "agent_id", default="cli-agent")
 def workflow_run(workflow_id: str, agent_id: str) -> None:
+    """Execute a workflow by its ID.
+
+    Args:
+        workflow_id: The unique workflow identifier.
+        agent_id: The agent to run the workflow as.
+    """
     step_results = runtime.pipeline.run(workflow_id, agent_id)
     emit(
         {
@@ -186,12 +192,18 @@ def workflow_run(workflow_id: str, agent_id: str) -> None:
 
 @cli.command()
 def workflows() -> None:
+    """List all workflows."""
     emit([asdict(workflow) for workflow in runtime.store.workflows.values()])
 
 
 @cli.command()
 @click.argument("agent")
 def permissions(agent: str) -> None:
+    """List permissions for an agent.
+
+    Args:
+        agent: The agent identifier.
+    """
     emit([asdict(binding) for binding in runtime.api.access.list_agent_permissions(agent)])
 
 
