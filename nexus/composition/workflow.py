@@ -172,4 +172,7 @@ class Pipeline:
         if "$previous" in resolved:
             resolved["previous"] = results[-1] if results else None
             del resolved["$previous"]
+        if "$all" in resolved:
+            resolved["all"] = list(results)
+            del resolved["$all"]
         return resolved
