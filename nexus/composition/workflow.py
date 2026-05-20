@@ -168,6 +168,7 @@ class Pipeline:
         return results
 
     def _resolve_params(self, params: dict[str, Any], results: list[Any]) -> dict[str, Any]:
+        import re
         resolved = dict(params)
         if "$previous" in resolved:
             resolved["previous"] = results[-1] if results else None
@@ -175,4 +176,11 @@ class Pipeline:
         if "$all" in resolved:
             resolved["all"] = list(results)
             del resolved["$all"]
+        # Support $step{N} references (e.g., $step0, $step1)
+        for key, value in list(resolved.items()):
+            if isinstance(value, str):
+                match = re.match(r"^\$step(\d+)$", value)
+                if match:
+                    step_idx = int(match.group(1))
+                    resolved[key] = results[step_idx] if step_idx < len(results) else None
         return resolved
