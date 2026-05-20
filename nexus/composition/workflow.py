@@ -91,7 +91,7 @@ class WorkflowBuilder:
         return self.store.delete_workflow(workflow_id)
 
 
-@dataclass
+@dataclass(slots=True)
 class StepResult:
     step_index: int
     tool_id: str
