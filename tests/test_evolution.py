@@ -443,3 +443,153 @@ def test_metrics_error_rate_all_errors():
     metrics = UsageMetrics(store)
     summary = metrics.summary()
     assert summary["error_rate"] == 1.0
+
+
+# ── OMEGA Evolution Cycle 2026-05-20 (v1.1.1) — New Tests ──
+
+class TestNexusStoreValidation:
+    """Test input validation in NexusStore methods."""
+
+    def test_register_agent_empty_string(self):
+        """register_agent raises ValueError for empty string."""
+        store = NexusStore()
+        with pytest.raises(ValueError, match="non-empty string"):
+            store.register_agent("")
+
+    def test_register_agent_whitespace_only(self):
+        """register_agent raises ValueError for whitespace-only string."""
+        store = NexusStore()
+        with pytest.raises(ValueError, match="non-empty string"):
+            store.register_agent("   ")
+
+    def test_register_agent_strips_whitespace(self):
+        """register_agent strips leading/trailing whitespace."""
+        store = NexusStore()
+        store.register_agent("  agent-1  ")
+        assert "agent-1" in store.agents
+        assert "  agent-1  " not in store.agents
+
+    def test_upsert_plugin_wrong_type(self):
+        """upsert_plugin raises TypeError for non-ToolPlugin."""
+        store = NexusStore()
+        with pytest.raises(TypeError, match="Expected ToolPlugin"):
+            store.upsert_plugin("not a plugin")
+
+    def test_upsert_plugin_none(self):
+        """upsert_plugin raises TypeError for None."""
+        store = NexusStore()
+        with pytest.raises(TypeError, match="Expected ToolPlugin"):
+            store.upsert_plugin(None)
+
+
+class TestNexusStoreContains:
+    """Test __contains__ for agent membership testing."""
+
+    def test_contains_registered_agent(self):
+        store = NexusStore()
+        store.register_agent("a1")
+        assert "a1" in store
+
+    def test_not_contains_unregistered_agent(self):
+        store = NexusStore()
+        assert "nonexistent" not in store
+
+    def test_contains_after_clear(self):
+        store = NexusStore()
+        store.register_agent("a1")
+        assert "a1" in store
+        store.clear()
+        assert "a1" not in store
+
+
+class TestNexusStoreAgentCallCount:
+    """Test agent_call_count and last_call_for_agent methods."""
+
+    def test_agent_call_count_zero(self):
+        store = NexusStore()
+        store.register_agent("a1")
+        assert store.agent_call_count("a1") == 0
+
+    def test_agent_call_count_multiple(self):
+        store = NexusStore()
+        for _ in range(5):
+            store.record_call(ToolCall("a1", "t1", "read", {}))
+        for _ in range(3):
+            store.record_call(ToolCall("a2", "t1", "read", {}))
+        assert store.agent_call_count("a1") == 5
+        assert store.agent_call_count("a2") == 3
+
+    def test_agent_call_count_unknown_agent(self):
+        store = NexusStore()
+        assert store.agent_call_count("unknown") == 0
+
+    def test_last_call_for_agent_none(self):
+        store = NexusStore()
+        store.register_agent("a1")
+        assert store.last_call_for_agent("a1") is None
+
+    def test_last_call_for_agent_returns_most_recent(self):
+        store = NexusStore()
+        store.record_call(ToolCall("a1", "t1", "read", {}))
+        store.record_call(ToolCall("a1", "t2", "write", {}))
+        store.record_call(ToolCall("a2", "t1", "read", {}))
+        last = store.last_call_for_agent("a1")
+        assert last is not None
+        assert last.tool_id == "t2"
+        assert last.action == "write"
+
+
+class TestCircuitBreakerValidation:
+    """Test CircuitBreaker parameter validation."""
+
+    def test_zero_failure_threshold_raises(self):
+        with pytest.raises(ValueError, match="failure_threshold must be >= 1"):
+            CircuitBreaker(failure_threshold=0)
+
+    def test_negative_failure_threshold_raises(self):
+        with pytest.raises(ValueError, match="failure_threshold must be >= 1"):
+            CircuitBreaker(failure_threshold=-1)
+
+    def test_negative_recovery_timeout_raises(self):
+        with pytest.raises(ValueError, match="recovery_timeout must be >= 0"):
+            CircuitBreaker(recovery_timeout=-1.0)
+
+    def test_valid_defaults(self):
+        cb = CircuitBreaker()
+        assert cb.failure_threshold == 5
+        assert cb.recovery_timeout == 30.0
+
+    def test_valid_custom_params(self):
+        cb = CircuitBreaker(failure_threshold=1, recovery_timeout=0.0)
+        assert cb.failure_threshold == 1
+        assert cb.recovery_timeout == 0.0
+
+
+class TestToolPluginToDict:
+    """Test ToolPlugin.to_dict serialization."""
+
+    def test_to_dict_contains_all_fields(self):
+        plugin = ToolPlugin("p1", "P1", "desc", "1.0", "api", ["read", "write"])
+        d = plugin.to_dict()
+        assert d["id"] == "p1"
+        assert d["name"] == "P1"
+        assert d["description"] == "desc"
+        assert d["version"] == "1.0"
+        assert d["plugin_type"] == "api"
+        assert d["capabilities"] == ["read", "write"]
+        assert d["status"] == "active"
+        assert "registered_at" in d
+
+    def test_to_dict_iso_timestamp(self):
+        plugin = ToolPlugin("p1", "P1", "desc", "1.0", "api", ["read"])
+        d = plugin.to_dict()
+        # ISO 8601 format check: should contain 'T' and end with '+00:00' or 'Z'
+        ts = d["registered_at"]
+        assert "T" in ts
+        assert "+" in ts or ts.endswith("Z")
+
+    def test_to_dict_copies_mutable_fields(self):
+        plugin = ToolPlugin("p1", "P1", "desc", "1.0", "api", ["read"])
+        d = plugin.to_dict()
+        d["capabilities"].append("admin")
+        assert "admin" not in plugin.capabilities
