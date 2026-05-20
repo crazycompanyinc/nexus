@@ -226,8 +226,8 @@ class TestUsageMetricsRepr:
 
         store = NexusStore()
         store.register_agent("a1")
-        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", status=CallStatus.SUCCESS.value))
-        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", status=CallStatus.ERROR.value))
+        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", params={}, status=CallStatus.SUCCESS.value))
+        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", params={}, status=CallStatus.ERROR.value))
         m = UsageMetrics(store)
         r = repr(m)
         assert "total_calls=2" in r
