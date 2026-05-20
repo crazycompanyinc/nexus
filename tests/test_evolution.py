@@ -243,3 +243,98 @@ def test_api_audit_trail_endpoint():
     app = create_app()
     paths = {route.path for route in app.routes}
     assert "/audit" in paths
+
+
+# ── OMEGA Evolution Cycle 2026-05-20 — New Tests ──
+
+def test_stepresult_slots():
+    """StepResult uses __slots__ (no __dict__)."""
+    from nexus.composition.workflow import StepResult
+    r = StepResult(step_index=0, tool_id="t", action="a", success=True)
+    assert not hasattr(r, "__dict__")
+
+
+def test_toolchain_repr():
+    """ToolChain repr shows agent and step count."""
+    from nexus.composition.chain import ToolChain
+    from nexus.core.db import NexusStore
+    from nexus.api.unified import UnifiedToolAPI
+    store = NexusStore()
+    api = UnifiedToolAPI(store)
+    chain = ToolChain(api, "agent").add("t1", "a1").add("t2", "a2")
+    rep = repr(chain)
+    assert "agent" in rep
+    assert "steps=2" in rep
+
+
+def test_workflow_builder_delete_audits(hub):
+    """WorkflowBuilder.delete emits workflow.deleted audit event."""
+    store, _, _ = hub
+    from nexus.composition.workflow import WorkflowBuilder
+    builder = WorkflowBuilder(store)
+    wf = builder.create("wf", [{"tool_id": "github", "action": "repos.list"}], "agent")
+    builder.delete(wf.id)
+    deleted_events = [e for e in store.audit_events if e.get("type") == "workflow.deleted"]
+    assert len(deleted_events) >= 1
+    assert deleted_events[-1]["workflow_id"] == wf.id
+
+
+def test_workflow_builder_delete_nonexistent(hub):
+    """WorkflowBuilder.delete returns False for nonexistent workflow."""
+    store, _, _ = hub
+    from nexus.composition.workflow import WorkflowBuilder
+    builder = WorkflowBuilder(store)
+    assert builder.delete("nonexistent") is False
+
+
+def test_pipeline_resolve_params_all(hub):
+    """Pipeline._resolve_params resolves $all to all previous results."""
+    store, _, api = hub
+    from nexus.composition.workflow import Pipeline
+    pipeline = Pipeline(api, store)
+    results = [{"id": 1}, {"id": 2}]
+    resolved = pipeline._resolve_params({"$all": True, "other": "val"}, results)
+    assert "all" in resolved
+    assert len(resolved["all"]) == 2
+    assert "$all" not in resolved
+    assert resolved["other"] == "val"
+
+
+def test_capability_registry_repr(hub):
+    """CapabilityRegistry repr shows tool and capability counts."""
+    store, manager, _ = hub
+    from nexus.discovery.discovery import CapabilityRegistry
+    reg = CapabilityRegistry(manager)
+    rep = repr(reg)
+    assert "CapabilityRegistry" in rep
+    assert "tools=" in rep
+
+
+def test_tool_discovery_repr(hub):
+    """ToolDiscovery repr shows tool count."""
+    store, manager, _ = hub
+    from nexus.discovery.discovery import ToolDiscovery
+    td = ToolDiscovery(manager)
+    rep = repr(td)
+    assert "ToolDiscovery" in rep
+    assert "tools=" in rep
+
+
+def test_performance_tracker_percentiles():
+    """PerformanceTracker.latency returns p50/p95/p99."""
+    from nexus.core.db import NexusStore, ToolCall
+    from nexus.metrics.performance import PerformanceTracker
+    from nexus.core.models import CallStatus
+    store = NexusStore()
+    # Inject calls with known durations
+    for ms in [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]:
+        call = ToolCall(agent_id="a", tool_id="t", action="x", params={}, duration_ms=ms, status=CallStatus.SUCCESS.value)
+        store.record_call(call)
+    tracker = PerformanceTracker(store)
+    lat = tracker.latency()
+    assert lat["count"] == 10
+    assert lat["min_ms"] == 10.0
+    assert lat["max_ms"] == 100.0
+    assert 50.0 <= lat["p50"] <= 60.0
+    assert 90.0 <= lat["p95"] <= 100.0
+    assert 95.0 <= lat["p99"] <= 100.0
