@@ -23,12 +23,15 @@ class UsageMetrics:
         by_agent = Counter(call.agent_id for call in calls)
         by_status = Counter(call.status for call in calls)
         durations = [call.duration_ms for call in calls if call.duration_ms > 0]
+        total = len(calls)
+        errors = sum(1 for c in calls if c.status == "error")
         return {
-            "total_calls": len(calls),
+            "total_calls": total,
             "by_tool": dict(by_tool),
             "by_agent": dict(by_agent),
             "by_status": dict(by_status),
             "latency_ms": latency_stats(durations),
+            "error_rate": round(errors / total, 4) if total > 0 else 0.0,
         }
 
     def tool_usage(self, tool_id: str) -> dict[str, Any]:
