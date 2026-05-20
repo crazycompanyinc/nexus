@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from nexus.core.db import NexusStore
+from nexus.core.models import ToolCall
 from nexus.metrics._stats import latency_stats
 
 
