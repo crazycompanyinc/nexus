@@ -338,3 +338,108 @@ def test_performance_tracker_percentiles():
     assert 50.0 <= lat["p50"] <= 60.0
     assert 90.0 <= lat["p95"] <= 100.0
     assert 95.0 <= lat["p99"] <= 100.0
+
+
+# ── OMEGA Evolution Cycle 2026-05-20 (v7.41) — New Tests ──
+
+def test_nexus_store_repr():
+    """NexusStore repr shows counts for all collections."""
+    from nexus.core.db import NexusStore
+    store = NexusStore()
+    store.register_agent("a1")
+    rep = repr(store)
+    assert "NexusStore" in rep
+    assert "agents=1" in rep
+    assert "calls=0/10000" in rep
+
+
+def test_nexus_store_repr_with_data():
+    """NexusStore repr reflects actual data counts."""
+    from nexus.core.db import NexusStore, ToolCall
+    from nexus.core.models import CallStatus
+    store = NexusStore(max_calls=100, max_audit_events=50)
+    store.register_agent("a1")
+    store.register_agent("a2")
+    store.record_call(ToolCall("a1", "t1", "x", {}, duration_ms=5.0, status=CallStatus.SUCCESS.value))
+    store.audit("test.event")
+    rep = repr(store)
+    assert "agents=2" in rep
+    assert "calls=1/100" in rep
+    assert "audit=1/50" in rep
+
+
+def test_usage_metrics_error_rate_zero():
+    """UsageMetrics.summary returns error_rate=0.0 when no errors."""
+    from nexus.core.db import NexusStore, ToolCall
+    from nexus.core.models import CallStatus
+    from nexus.metrics.metrics import UsageMetrics
+    store = NexusStore()
+    store.record_call(ToolCall("a1", "t1", "x", {}, status=CallStatus.SUCCESS.value))
+    store.record_call(ToolCall("a1", "t1", "x", {}, status=CallStatus.SUCCESS.value))
+    metrics = UsageMetrics(store)
+    summary = metrics.summary()
+    assert summary["error_rate"] == 0.0
+    assert summary["total_calls"] == 2
+
+
+def test_usage_metrics_error_rate_mixed():
+    """UsageMetrics.summary returns correct error_rate for mixed results."""
+    from nexus.core.db import NexusStore, ToolCall
+    from nexus.core.models import CallStatus
+    from nexus.metrics.metrics import UsageMetrics
+    store = NexusStore()
+    store.record_call(ToolCall("a1", "t1", "x", {}, status=CallStatus.SUCCESS.value))
+    store.record_call(ToolCall("a1", "t1", "x", {}, status=CallStatus.ERROR.value))
+    store.record_call(ToolCall("a1", "t1", "x", {}, status=CallStatus.ERROR.value))
+    store.record_call(ToolCall("a1", "t1", "x", {}, status=CallStatus.SUCCESS.value))
+    metrics = UsageMetrics(store)
+    summary = metrics.summary()
+    assert summary["error_rate"] == 0.5
+
+
+def test_usage_metrics_error_rate_empty():
+    """UsageMetrics.summary returns error_rate=0.0 for empty store."""
+    from nexus.core.db import NexusStore
+    from nexus.metrics.metrics import UsageMetrics
+    store = NexusStore()
+    metrics = UsageMetrics(store)
+    summary = metrics.summary()
+    assert summary["error_rate"] == 0.0
+    assert summary["total_calls"] == 0
+
+
+def test_plugin_manager_list_by_status(hub):
+    """PluginManager.list_plugins_by_status filters correctly."""
+    store, manager, _ = hub
+    active = manager.list_plugins_by_status("active")
+    assert len(active) > 0
+    assert all(p.status == "active" for p in active)
+
+
+def test_plugin_manager_list_by_status_error(hub):
+    """PluginManager.list_plugins_by_status returns empty for error status."""
+    store, manager, _ = hub
+    errors = manager.list_plugins_by_status("error")
+    assert errors == []
+
+
+def test_plugin_manager_repr(hub):
+    """PluginManager repr shows plugin counts."""
+    store, manager, _ = hub
+    rep = repr(manager)
+    assert "PluginManager" in rep
+    assert "plugins=" in rep
+    assert "active=" in rep
+
+
+def test_metrics_error_rate_all_errors():
+    """UsageMetrics.summary returns error_rate=1.0 when all calls errored."""
+    from nexus.core.db import NexusStore, ToolCall
+    from nexus.core.models import CallStatus
+    from nexus.metrics.metrics import UsageMetrics
+    store = NexusStore()
+    for _ in range(5):
+        store.record_call(ToolCall("a1", "t1", "x", {}, status=CallStatus.ERROR.value))
+    metrics = UsageMetrics(store)
+    summary = metrics.summary()
+    assert summary["error_rate"] == 1.0
