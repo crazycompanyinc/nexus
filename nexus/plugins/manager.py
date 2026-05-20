@@ -10,39 +10,110 @@ from nexus.plugins.sdk import Plugin, registered_plugins
 
 
 class PluginManager:
+    """Manages plugin lifecycle: registration, discovery, installation, and health monitoring.
+
+    Coordinates between the plugin registry (metadata), loader (discovery),
+    and store (persistence) to provide a unified plugin management surface.
+
+    Example:
+        >>> manager = PluginManager()
+        >>> manager.install_all_builtins()
+        >>> len(manager.list_plugins())
+        11
+    """
+
     def __init__(self, store: NexusStore | None = None, registry: PluginRegistry | None = None) -> None:
+        """Initialize the PluginManager.
+
+        Args:
+            store: NexusStore instance for persistence. Creates default if None.
+            registry: PluginRegistry instance. Creates default if None.
+        """
         self.store = store or NexusStore()
         self.registry = registry or PluginRegistry()
         self.loader = PluginLoader()
 
     def register(self, plugin: Plugin) -> ToolPlugin:
+        """Register a plugin, persisting its metadata and recording an audit event.
+
+        Args:
+            plugin: The Plugin instance to register.
+
+        Returns:
+            The registered ToolPlugin metadata.
+        """
         metadata = self.registry.register(plugin)
         self.store.upsert_plugin(metadata)
         self.store.audit("plugin.registered", tool_id=metadata.id)
         return metadata
 
     def install_builtin(self, plugin_id: str) -> ToolPlugin:
+        """Install a single built-in plugin by its ID.
+
+        Args:
+            plugin_id: The identifier of the built-in plugin to install.
+
+        Returns:
+            The registered ToolPlugin metadata.
+
+        Raises:
+            KeyError: If no built-in plugin matches the given ID.
+        """
         for plugin in self.loader.load_builtins():
             if plugin.metadata.id == plugin_id:
                 return self.register(plugin)
         raise KeyError(f"Unknown built-in plugin: {plugin_id}")
 
     def install_all_builtins(self) -> list[ToolPlugin]:
+        """Install all available built-in plugins.
+
+        Returns:
+            List of registered ToolPlugin metadata for all built-ins.
+        """
         return [self.register(plugin) for plugin in self.loader.load_builtins()]
 
     def install_global_plugins(self) -> list[ToolPlugin]:
+        """Install all globally registered plugins (via @register_plugin decorator).
+
+        Returns:
+            List of registered ToolPlugin metadata for all global plugins.
+        """
         return [self.register(plugin) for plugin in registered_plugins().values()]
 
     def hot_load(self, directory: str) -> list[ToolPlugin]:
+        """Dynamically load and register plugins from a directory.
+
+        Args:
+            directory: Path to a directory containing plugin modules.
+
+        Returns:
+            List of registered ToolPlugin metadata for loaded plugins.
+        """
         return [self.register(plugin) for plugin in self.loader.load_directory(directory)]
 
     def get(self, plugin_id: str) -> Plugin:
+        """Retrieve a registered plugin instance by ID.
+
+        Args:
+            plugin_id: The plugin identifier.
+
+        Returns:
+            The Plugin instance.
+
+        Raises:
+            KeyError: If the plugin is not installed.
+        """
         plugin = self.registry.get(plugin_id)
         if plugin is None:
             raise KeyError(f"Plugin not installed: {plugin_id}")
         return plugin
 
     def list_plugins(self) -> list[ToolPlugin]:
+        """List all registered plugins' metadata.
+
+        Returns:
+            List of ToolPlugin instances for all registered plugins.
+        """
         return self.registry.metadata()
 
     def list_plugins_by_status(self, status: str) -> list[ToolPlugin]:
