@@ -4,6 +4,7 @@ import pytest
 
 from nexus.composition.workflow import Pipeline, WorkflowBuilder, StepResult
 from nexus.core.circuit_breaker import CircuitBreaker
+from nexus.core.db import NexusStore, ToolCall
 from nexus.core.models import ToolPlugin, WorkflowStep
 
 
