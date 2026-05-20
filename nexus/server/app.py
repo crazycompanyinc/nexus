@@ -300,12 +300,13 @@ def create_app() -> FastAPI:
         items = []
         for agent_id in agents:
             bindings = api.access.list_agent_permissions(agent_id)
-            recent = [c for c in store.calls if c.agent_id == agent_id]
+            total_calls = store.agent_call_count(agent_id)
+            last_call = store.last_call_for_agent(agent_id)
             items.append({
                 "agent_id": agent_id,
                 "bindings": len(bindings),
-                "total_calls": len(recent),
-                "last_called_at": recent[-1].called_at.isoformat() if recent else None,
+                "total_calls": total_calls,
+                "last_called_at": last_call.called_at.isoformat() if last_call else None,
             })
         return {"items": items, "total": len(agents)}
 

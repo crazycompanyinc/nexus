@@ -180,6 +180,55 @@ class NexusStore:
     def __bool__(self) -> bool:
         return True
 
+    def __contains__(self, agent_id: str) -> bool:
+        """Check if an agent is registered in the store.
+
+        Args:
+            agent_id: The agent identifier to check.
+
+        Returns:
+            True if the agent is registered, False otherwise.
+
+        Example:
+            >>> store = NexusStore()
+            >>> store.register_agent("a1")
+            >>> "a1" in store
+            True
+            >>> "nonexistent" in store
+            False
+        """
+        return agent_id in self.agents
+
+    def agent_call_count(self, agent_id: str) -> int:
+        """Return the number of tool calls made by a specific agent.
+
+        Uses an efficient generator-based count instead of building
+        an intermediate list.
+
+        Args:
+            agent_id: The agent identifier.
+
+        Returns:
+            The number of calls recorded for the agent.
+        """
+        return sum(1 for c in self.calls if c.agent_id == agent_id)
+
+    def last_call_for_agent(self, agent_id: str) -> ToolCall | None:
+        """Return the most recent tool call for a specific agent.
+
+        Searches calls in reverse order for efficiency.
+
+        Args:
+            agent_id: The agent identifier.
+
+        Returns:
+            The most recent ToolCall for the agent, or None if no calls exist.
+        """
+        for call in reversed(self.calls):
+            if call.agent_id == agent_id:
+                return call
+        return None
+
     def __repr__(self) -> str:
         return (
             f"NexusStore(agents={len(self.agents)}, plugins={len(self.plugins)}, "
