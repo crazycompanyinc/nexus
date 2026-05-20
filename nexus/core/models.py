@@ -189,6 +189,19 @@ class WorkflowStep:
 
 @dataclass(slots=True)
 class Workflow:
+    """Represents a multi-step workflow definition.
+
+    Attributes:
+        id: Unique workflow identifier (auto-generated UUID).
+        name: Human-readable workflow name.
+        description: Brief description of the workflow's purpose.
+        steps: Ordered list of workflow steps.
+        trigger: Trigger type (manual, scheduled, event).
+        status: Current workflow lifecycle status.
+        created_by: Identifier of the agent that created the workflow.
+        created_at: Timestamp of workflow creation.
+    """
+
     id: str
     name: str
     description: str
