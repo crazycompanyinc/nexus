@@ -61,6 +61,8 @@ class WorkflowTrigger(str, Enum):
 
 
 class WorkflowStatus(str, Enum):
+    """Enumeration of possible workflow execution states."""
+
     ACTIVE = "active"
     PAUSED = "paused"
     ERROR = "error"
