@@ -36,6 +36,11 @@ runtime = Runtime()
 
 
 def emit(value: Any) -> None:
+    """Pretty-print a value as JSON to stdout.
+
+    Args:
+        value: The value to serialize and print.
+    """
     click.echo(json.dumps(value, default=str, indent=2))
 
 
