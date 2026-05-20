@@ -104,7 +104,7 @@ def create_app() -> FastAPI:
     api = UnifiedToolAPI(store, manager, AccessControl(store))
     workflows = WorkflowBuilder(store)
     pipeline = Pipeline(api, store)
-    app = FastAPI(title="Nexus", version="0.1.0")
+    app = FastAPI(title="Nexus", version="1.1.0")
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
     app.add_middleware(
