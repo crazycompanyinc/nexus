@@ -268,6 +268,39 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, Any]:
         return manager.health()
 
+    @app.get("/health/detailed")
+    async def health_detailed() -> dict[str, Any]:
+        """Detailed health check including plugin capabilities and store stats."""
+        plugins = manager.list_plugins()
+        return {
+            "status": "healthy",
+            "plugins": {
+                "total": len(plugins),
+                "active": sum(1 for p in plugins if p.status == "active"),
+                "inactive": sum(1 for p in plugins if p.status != "active"),
+                "details": manager.health(),
+            },
+            "store": {
+                "agents": len(store.agents),
+                "plugins": len(store.plugins),
+                "bindings": len(store.bindings),
+                "calls": len(store.calls),
+                "workflows": len(store.workflows),
+                "audit_events": len(store.audit_events),
+            },
+        }
+
+    @app.post("/store/export")
+    async def export_store() -> dict[str, Any]:
+        """Export the full store state for backup."""
+        return store.export()
+
+    @app.post("/store/import")
+    async def import_store(request: dict[str, Any]) -> dict[str, Any]:
+        """Import store state from a previous export. Replaces all data."""
+        store.import_(request)
+        return {"imported": True, "agents": len(store.agents), "plugins": len(store.plugins)}
+
     @app.get("/version")
     async def version() -> dict[str, str]:
         """Return the Nexus API version."""
