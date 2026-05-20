@@ -36,12 +36,16 @@ class PluginStatus(str, Enum):
 
 
 class PermissionLevel(str, Enum):
+    """Enumeration of agent permission levels for tool access."""
+
     READ = "read"
     WRITE = "write"
     ADMIN = "admin"
 
 
 class CallStatus(str, Enum):
+    """Enumeration of possible tool call outcomes."""
+
     SUCCESS = "success"
     ERROR = "error"
     TIMEOUT = "timeout"
@@ -49,6 +53,8 @@ class CallStatus(str, Enum):
 
 
 class WorkflowTrigger(str, Enum):
+    """Enumeration of workflow trigger types."""
+
     MANUAL = "manual"
     SCHEDULED = "scheduled"
     EVENT = "event"
