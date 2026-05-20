@@ -69,6 +69,7 @@ class ErrorResponse(BaseModel):
 
 class CallRequest(BaseModel):
     agent_id: str
+    tool_id: str = ""
     action: str
     params: dict[str, Any] = Field(default_factory=dict)
     fallback_tools: list[str] = Field(default_factory=list)
@@ -162,6 +163,19 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/tools/batch")
+    async def batch_call(requests: list[CallRequest]) -> dict[str, Any]:
+        """Execute multiple tool calls in sequence."""
+        results = []
+        for req in requests:
+            try:
+                result = api.call(req.agent_id, req.tool_id, req.action, req.params, req.fallback_tools)
+                results.append({"tool_id": req.tool_id, "action": req.action, "result": result, "success": True})
+            except Exception as exc:
+                results.append({"tool_id": req.tool_id, "action": req.action, "error": str(exc), "success": False})
+        succeeded = sum(1 for r in results if r["success"])
+        return {"results": results, "succeeded": succeeded, "failed": len(results) - succeeded}
 
     @app.post("/workflows")
     async def create_workflow(request: WorkflowRequest) -> dict[str, Any]:
