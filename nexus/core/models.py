@@ -133,6 +133,20 @@ class AgentToolBinding:
 
 @dataclass(slots=True)
 class ToolCall:
+    """Represents a single tool invocation by an agent.
+
+    Attributes:
+        agent_id: Unique identifier for the calling agent.
+        tool_id: Unique identifier for the invoked tool.
+        action: Action name executed on the tool.
+        params: Parameters passed to the action.
+        result: Output from the tool execution.
+        duration_ms: Execution time in milliseconds.
+        status: Call outcome status (success, error, timeout, denied).
+        id: Unique call identifier (auto-generated UUID).
+        called_at: Timestamp of the call.
+    """
+
     agent_id: str
     tool_id: str
     action: str
@@ -149,6 +163,18 @@ class ToolCall:
 
 @dataclass(slots=True)
 class WorkflowStep:
+    """Represents a single step within a workflow.
+
+    Attributes:
+        tool_id: Tool identifier to invoke.
+        action: Action name to execute.
+        params: Parameters passed to the action.
+        condition: Optional condition for step execution.
+        fallback_tools: Ordered list of backup tool IDs.
+        max_retries: Maximum retry attempts on failure.
+        retry_delay_ms: Base delay between retries in milliseconds.
+    """
+
     tool_id: str
     action: str
     params: dict[str, Any] = field(default_factory=dict)
