@@ -94,6 +94,7 @@ def create_app() -> FastAPI:
     workflows = WorkflowBuilder(store)
     pipeline = Pipeline(api, store)
     app = FastAPI(title="Nexus", version="0.1.0")
+    rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
     app.add_middleware(
         CORSMiddleware,
@@ -102,6 +103,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def rate_limit_middleware(request: Request, call_next):
+        """Apply rate limiting to all incoming requests."""
+        response = await rate_limiter.check(request)
+        if response is not None:
+            return response
+        return await call_next(request)
 
     @app.exception_handler(PermissionError)
     async def permission_error_handler(request: Request, exc: PermissionError) -> JSONResponse:
