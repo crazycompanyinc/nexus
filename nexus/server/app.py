@@ -156,6 +156,27 @@ def create_app() -> FastAPI:
             "has_more": offset + limit < len(all_plugins),
         }
 
+    @app.get("/plugins/{plugin_id}")
+    async def get_plugin(plugin_id: str) -> dict[str, Any]:
+        """Get a single plugin by its ID."""
+        try:
+            plugin = manager.get(plugin_id)
+            return asdict(plugin.metadata.to_model())
+        except KeyError:
+            raise HTTPException(status_code=404, detail=f"Plugin {plugin_id} not found")
+
+    @app.delete("/plugins/{plugin_id}")
+    async def delete_plugin(plugin_id: str) -> dict[str, Any]:
+        """Unregister a plugin by its ID."""
+        try:
+            manager.get(plugin_id)  # verify it exists
+            manager.registry.unregister(plugin_id)
+            store.plugins.pop(plugin_id, None)
+            store.audit("plugin.unregistered", tool_id=plugin_id)
+            return {"unregistered": True, "plugin_id": plugin_id}
+        except KeyError:
+            raise HTTPException(status_code=404, detail=f"Plugin {plugin_id} not found")
+
     @app.get("/discover")
     async def discover() -> list[dict[str, object]]:
         return ToolDiscovery(manager).available_tools()
