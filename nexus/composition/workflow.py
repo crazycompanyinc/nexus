@@ -44,6 +44,9 @@ class WorkflowBuilder:
             trigger=trigger,
             created_by=created_by,
         )
+        errors = workflow.validate()
+        if errors:
+            raise ValueError(f"Workflow validation failed: {'; '.join(errors)}")
         self.store.save_workflow(workflow)
         self.store.audit("workflow.created", workflow_id=workflow.id, created_by=created_by)
         return workflow
