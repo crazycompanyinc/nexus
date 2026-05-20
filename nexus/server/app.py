@@ -194,8 +194,19 @@ def create_app() -> FastAPI:
         return {"deleted": True, "workflow_id": workflow_id}
 
     @app.get("/workflows")
-    async def list_workflows() -> list[dict[str, Any]]:
-        return [asdict(wf) for wf in workflows.list()]
+    async def list_workflows(
+        offset: int = Query(0, ge=0),
+        limit: int = Query(50, ge=1, le=200),
+    ) -> dict[str, Any]:
+        all_wf = workflows.list()
+        items = [asdict(wf) for wf in all_wf[offset : offset + limit]]
+        return {
+            "items": items,
+            "total": len(all_wf),
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + limit < len(all_wf),
+        }
 
     @app.get("/workflows/{workflow_id}")
     async def get_workflow(workflow_id: str) -> dict[str, Any]:
