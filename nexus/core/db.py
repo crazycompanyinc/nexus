@@ -176,6 +176,46 @@ class NexusStore:
         self.workflows.clear()
         self.audit_events.clear()
 
+    def export(self) -> dict[str, Any]:
+        """Export the full store state as a JSON-serializable dict.
+
+        Returns:
+            A dict with keys: agents, plugins, bindings, calls, workflows, audit_events.
+        """
+        return {
+            "agents": sorted(self.agents),
+            "plugins": [self._to_dict(p) for p in self.plugins.values()],
+            "bindings": [self._to_dict(b) for b in self.bindings.values()],
+            "calls": [self._to_dict(c) for c in self.calls],
+            "workflows": [self._to_dict(w) for w in self.workflows.values()],
+            "audit_events": list(self.audit_events),
+        }
+
+    def import_(self, data: dict[str, Any]) -> None:
+        """Import store state from an exported dict. Replaces all current data.
+
+        Args:
+            data: Dict produced by export().
+        """
+        self.clear()
+        for agent_id in data.get("agents", []):
+            self.agents.add(agent_id)
+        for plugin_dict in data.get("plugins", []):
+            plugin = ToolPlugin(**plugin_dict)
+            self.plugins[plugin.id] = plugin
+        for binding_dict in data.get("bindings", []):
+            binding = AgentToolBinding(**binding_dict)
+            self.bindings[(binding.agent_id, binding.tool_id)] = binding
+        for call_dict in data.get("calls", []):
+            call = ToolCall(**call_dict)
+            self.calls.append(call)
+        for wf_dict in data.get("workflows", []):
+            steps = [WorkflowStep(**s) for s in wf_dict.pop("steps", [])]
+            workflow = Workflow(**wf_dict, steps=steps)
+            self.workflows[workflow.id] = workflow
+        for event in data.get("audit_events", []):
+            self.audit_events.append(event)
+
     def recent_calls(self, n: int = 10) -> list[ToolCall]:
         """Return the most recent tool calls.
 
