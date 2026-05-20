@@ -49,15 +49,28 @@ class NexusStore:
 
         Args:
             agent_id: Unique identifier for the agent.
+
+        Raises:
+            ValueError: If agent_id is empty or not a string.
         """
-        self.agents.add(agent_id)
+        if not isinstance(agent_id, str) or not agent_id.strip():
+            raise ValueError(f"agent_id must be a non-empty string, got {agent_id!r}")
+        self.agents.add(agent_id.strip())
 
     def upsert_plugin(self, plugin: ToolPlugin) -> None:
         """Insert or update a tool plugin in the store.
 
         Args:
             plugin: The ToolPlugin instance to store.
+
+        Raises:
+            TypeError: If plugin is not a ToolPlugin instance.
+            ValueError: If plugin.id is empty.
         """
+        if not isinstance(plugin, ToolPlugin):
+            raise TypeError(f"Expected ToolPlugin instance, got {type(plugin).__name__}")
+        if not plugin.id or not plugin.id.strip():
+            raise ValueError("Plugin id cannot be empty")
         self.plugins[plugin.id] = plugin
 
     def bind_tool(self, binding: AgentToolBinding) -> None:
