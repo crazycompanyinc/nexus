@@ -94,6 +94,14 @@ class WorkflowBuilder:
         return workflow
 
     def get(self, workflow_id: str) -> Workflow | None:
+        """Retrieve a workflow by its ID.
+
+        Args:
+            workflow_id: The unique workflow identifier.
+
+        Returns:
+            The Workflow if found, None otherwise.
+        """
         return self.store.workflows.get(workflow_id)
 
     def update(
@@ -104,6 +112,24 @@ class WorkflowBuilder:
         status: str | None = None,
         steps: list[dict[str, Any]] | None = None,
     ) -> Workflow:
+        """Update an existing workflow's properties.
+
+        Re-validates the workflow after applying changes.
+
+        Args:
+            workflow_id: The workflow to update.
+            name: New name (optional).
+            description: New description (optional).
+            status: New status (optional).
+            steps: New steps list (optional).
+
+        Returns:
+            The updated Workflow instance.
+
+        Raises:
+            KeyError: If workflow_id is not found.
+            ValueError: If validation fails after update.
+        """
         workflow = self.store.workflows.get(workflow_id)
         if workflow is None:
             raise KeyError(f"Workflow not found: {workflow_id}")
