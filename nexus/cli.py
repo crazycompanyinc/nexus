@@ -51,12 +51,18 @@ def cli() -> None:
 
 @cli.command()
 def init() -> None:
+    """Install all built-in plugins."""
     emit({"installed": [plugin.id for plugin in runtime.manager.install_all_builtins()]})
 
 
 @cli.command()
 @click.argument("agent_id")
 def register(agent_id: str) -> None:
+    """Register a new agent.
+
+    Args:
+        agent_id: Unique identifier for the agent.
+    """
     runtime.store.register_agent(agent_id)
     runtime.store.audit("agent.registered", agent_id=agent_id)
     emit({"agent_id": agent_id, "registered": True})
