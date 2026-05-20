@@ -160,9 +160,22 @@ class WorkflowBuilder:
         return workflow
 
     def list(self) -> list[Workflow]:
+        """List all stored workflows.
+
+        Returns:
+            List of all Workflow instances.
+        """
         return list(self.store.workflows.values())
 
     def delete(self, workflow_id: str) -> bool:
+        """Delete a workflow by its ID.
+
+        Args:
+            workflow_id: The workflow to delete.
+
+        Returns:
+            True if deleted, False if not found.
+        """
         if self.store.delete_workflow(workflow_id):
             self.store.audit("workflow.deleted", workflow_id=workflow_id)
             return True
