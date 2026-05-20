@@ -167,6 +167,13 @@ class NexusStore:
     def __bool__(self) -> bool:
         return True
 
+    def __repr__(self) -> str:
+        return (
+            f"NexusStore(agents={len(self.agents)}, plugins={len(self.plugins)}, "
+            f"bindings={len(self.bindings)}, calls={len(self.calls)}/{self._max_calls}, "
+            f"workflows={len(self.workflows)}, audit={len(self.audit_events)}/{self._max_audit})"
+        )
+
     def clear(self) -> None:
         """Clear all stored data. Useful for testing."""
         self.agents.clear()
