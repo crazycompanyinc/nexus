@@ -41,3 +41,10 @@ class PerformanceTracker:
             else:
                 result[tool_id] = {"avg_ms": 0, "max_ms": 0, "min_ms": 0, "p95": 0, "calls": 0}
         return result
+
+    def __repr__(self) -> str:
+        lat = self.latency()
+        return (
+            f"PerformanceTracker(calls={lat['count']}, "
+            f"avg={lat['avg_ms']:.1f}ms, p95={lat['p95']:.1f}ms, p99={lat['p99']:.1f}ms)"
+        )
