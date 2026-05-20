@@ -128,6 +128,14 @@ def unbind(agent: str, tool_id: str) -> None:
 @click.option("--action", required=True)
 @click.option("--params", default="{}")
 def call_tool(tool: str, agent_id: str, action: str, params: str) -> None:
+    """Invoke a tool action as an agent.
+
+    Args:
+        tool: The tool identifier.
+        agent_id: The agent making the call (default: cli-agent).
+        action: The action to execute.
+        params: JSON string of parameters.
+    """
     emit(runtime.api.call(agent_id, tool, action, json.loads(params)))
 
 
@@ -141,6 +149,13 @@ def workflow() -> None:
 @click.option("--steps", required=True)
 @click.option("--created-by", default="cli-agent")
 def workflow_create(name: str, steps: str, created_by: str) -> None:
+    """Create a new workflow.
+
+    Args:
+        name: Human-readable workflow name.
+        steps: JSON array of step definitions.
+        created_by: Agent identifier for the creator.
+    """
     emit(asdict(runtime.workflows.create(name, json.loads(steps), created_by)))
 
 
