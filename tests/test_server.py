@@ -108,3 +108,65 @@ class TestRateLimitMiddleware:
         assert results[3] is not None  # blocked
         assert results[4] is not None  # blocked
         assert results[3].status_code == 429
+
+
+class TestBatchCallEndpoint:
+    def test_batch_call_empty(self, client):
+        resp = client.post("/tools/batch", json=[])
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["results"] == []
+        assert data["succeeded"] == 0
+        assert data["failed"] == 0
+
+    def test_batch_call_single(self, client):
+        resp = client.post("/tools/batch", json=[
+            {"agent_id": "test-agent", "tool_id": "http", "action": "fetch", "params": {"url": "https://example.com"}}
+        ])
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["results"]) == 1
+
+    def test_batch_call_multiple(self, client):
+        resp = client.post("/tools/batch", json=[
+            {"agent_id": "test-agent", "tool_id": "http", "action": "fetch", "params": {}},
+            {"agent_id": "test-agent", "tool_id": "filesystem", "action": "file.read", "params": {"path": "/tmp/test"}},
+        ])
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["results"]) == 2
+        assert "succeeded" in data
+        assert "failed" in data
+
+
+class TestHealthDetailed:
+    def test_health_detailed_returns_store_stats(self, client):
+        resp = client.get("/health/detailed")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "healthy"
+        assert "plugins" in data
+        assert "store" in data
+        assert "agents" in data["store"]
+        assert "calls" in data["store"]
+
+
+class TestStoreExportImport:
+    def test_export_returns_data(self, client):
+        resp = client.post("/store/export")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "agents" in data
+        assert "plugins" in data
+        assert "workflows" in data
+
+    def test_import_replaces_data(self, client):
+        # First export
+        resp = client.post("/store/export")
+        exported = resp.json()
+
+        # Import it back
+        resp = client.post("/store/import", json=exported)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["imported"] is True
