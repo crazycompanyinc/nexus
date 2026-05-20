@@ -88,7 +88,10 @@ class WorkflowBuilder:
         return list(self.store.workflows.values())
 
     def delete(self, workflow_id: str) -> bool:
-        return self.store.delete_workflow(workflow_id)
+        if self.store.delete_workflow(workflow_id):
+            self.store.audit("workflow.deleted", workflow_id=workflow_id)
+            return True
+        return False
 
 
 @dataclass(slots=True)
