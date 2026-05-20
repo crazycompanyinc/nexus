@@ -170,3 +170,102 @@ class TestStoreExportImport:
         assert resp.status_code == 200
         data = resp.json()
         assert data["imported"] is True
+
+
+class TestListAgentsEndpoint:
+    def test_list_agents_empty(self, client):
+        resp = client.get("/agents")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["items"] == []
+        assert data["total"] == 0
+
+    def test_list_agents_with_registered(self, client):
+        # Register an agent via binding
+        client.post("/bindings", json={"agent_id": "agent-x", "tool_id": "http", "level": "read"})
+        resp = client.get("/agents")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] >= 1
+        agent_ids = [a["agent_id"] for a in data["items"]]
+        assert "agent-x" in agent_ids
+
+    def test_list_agents_includes_metadata(self, client):
+        client.post("/bindings", json={"agent_id": "agent-meta", "tool_id": "http", "level": "write"})
+        resp = client.get("/agents")
+        assert resp.status_code == 200
+        data = resp.json()
+        agent = next(a for a in data["items"] if a["agent_id"] == "agent-meta")
+        assert "bindings" in agent
+        assert "total_calls" in agent
+        assert agent["bindings"] >= 1
+
+
+class TestAgentUsageEndpoint:
+    def test_agent_usage_not_found(self, client):
+        resp = client.get("/agents/nonexistent/usage")
+        assert resp.status_code == 404
+
+    def test_agent_usage_returns_metrics(self, client):
+        # Register agent and make a call
+        client.post("/bindings", json={"agent_id": "agent-usage", "tool_id": "http", "level": "write"})
+        client.post("/tools/http/call", json={
+            "agent_id": "agent-usage", "tool_id": "http",
+            "action": "fetch", "params": {"url": "https://example.com"}
+        })
+        resp = client.get("/agents/agent-usage/usage")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["agent_id"] == "agent-usage"
+        assert data["calls"] >= 1
+        assert "actions" in data
+        assert "latency_ms" in data
+
+
+class TestMetricsTimeRange:
+    def test_metrics_no_params(self, client):
+        resp = client.get("/metrics")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total_calls" in data
+        assert "by_tool" in data
+        assert "by_agent" in data
+        assert "error_rate" in data
+
+    def test_metrics_with_since(self, client):
+        resp = client.get("/metrics?since=2026-01-01T00:00:00Z")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total_calls" in data
+
+    def test_metrics_with_since_and_until(self, client):
+        resp = client.get("/metrics?since=2026-01-01T00:00:00Z&until=2099-12-31T23:59:59Z")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total_calls" in data
+
+    def test_metrics_invalid_since(self, client):
+        resp = client.get("/metrics?since=not-a-date")
+        assert resp.status_code == 400
+
+    def test_metrics_invalid_until(self, client):
+        resp = client.get("/metrics?until=also-not-a-date")
+        assert resp.status_code == 400
+
+
+class TestValueErrorHandler:
+    def test_value_error_returns_400(self, client):
+        # Trigger a ValueError via invalid binding level
+        resp = client.post("/bindings", json={"agent_id": "a", "tool_id": "b", "level": "superadmin"})
+        assert resp.status_code == 400
+        data = resp.json()
+        assert data["error"] == "bad_request"
+        assert data["code"] == "BAD_REQUEST"
+
+
+class TestVersionBumped:
+    def test_version_is_1_1_0(self, client):
+        resp = client.get("/version")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["version"] == "1.1.0"
