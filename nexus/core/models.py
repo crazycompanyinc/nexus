@@ -8,10 +8,17 @@ from uuid import uuid4
 
 
 def utcnow() -> datetime:
+    """Return the current datetime in UTC timezone.
+
+    Returns:
+        A timezone-aware datetime representing the current moment in UTC.
+    """
     return datetime.now(timezone.utc)
 
 
 class PluginType(str, Enum):
+    """Enumeration of supported plugin integration types."""
+
     API = "api"
     CLI = "cli"
     LIBRARY = "library"
@@ -20,6 +27,8 @@ class PluginType(str, Enum):
 
 
 class PluginStatus(str, Enum):
+    """Enumeration of possible plugin lifecycle states."""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
     ERROR = "error"
