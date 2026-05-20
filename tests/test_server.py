@@ -255,8 +255,8 @@ class TestMetricsTimeRange:
 
 class TestValueErrorHandler:
     def test_value_error_returns_400(self, client):
-        # Trigger a ValueError via invalid binding level
-        resp = client.post("/bindings", json={"agent_id": "a", "tool_id": "b", "level": "superadmin"})
+        # Trigger a ValueError via workflow creation with empty name
+        resp = client.post("/workflows", json={"name": "", "steps": [], "created_by": "test"})
         assert resp.status_code == 400
         data = resp.json()
         assert data["error"] == "bad_request"
