@@ -84,6 +84,10 @@ class WorkflowBuilder:
                 )
                 for step in steps
             ]
+        # Re-validate after all mutations
+        errors = workflow.validate()
+        if errors:
+            raise ValueError(f"Workflow validation failed after update: {'; '.join(errors)}")
         self.store.audit("workflow.updated", workflow_id=workflow.id)
         return workflow
 

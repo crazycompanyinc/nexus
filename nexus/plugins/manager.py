@@ -62,6 +62,23 @@ class PluginManager:
     def health(self) -> dict[str, Any]:
         return {plugin.metadata.id: plugin.health() for plugin in self.registry.list()}
 
+    def unregister(self, plugin_id: str) -> bool:
+        """Unregister a plugin by ID. Returns True if removed, False if not found.
+
+        Args:
+            plugin_id: The plugin identifier to remove.
+
+        Returns:
+            True if the plugin was unregistered, False if it wasn't found.
+        """
+        plugin = self.registry.get(plugin_id)
+        if plugin is None:
+            return False
+        self.registry.unregister(plugin_id)
+        self.store.plugins.pop(plugin_id, None)
+        self.store.audit("plugin.unregistered", tool_id=plugin_id)
+        return True
+
     def __repr__(self) -> str:
         plugins = self.registry.metadata()
         active = sum(1 for p in plugins if p.status == "active")
