@@ -212,6 +212,13 @@ def permissions(agent: str) -> None:
 @click.option("--tool", "tool_id", required=True)
 @click.option("--level", required=True, type=click.Choice(["read", "write", "admin"]))
 def grant(agent: str, tool_id: str, level: str) -> None:
+    """Grant a permission level on a tool to an agent.
+
+    Args:
+        agent: The agent identifier.
+        tool_id: The tool identifier.
+        level: Permission level (read, write, admin).
+    """
     emit(asdict(runtime.api.access.grant(agent, tool_id, level)))
 
 
