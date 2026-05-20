@@ -129,3 +129,19 @@ class Workflow:
 
     def __repr__(self) -> str:
         return f"Workflow(id={self.id[:8]}…, name={self.name!r}, steps={len(self.steps)}, trigger={self.trigger!r}, status={self.status!r})"
+
+    def validate(self) -> list[str]:
+        """Validate workflow integrity. Returns list of error messages (empty = valid)."""
+        errors: list[str] = []
+        if not self.name.strip():
+            errors.append("Workflow name cannot be empty")
+        if not self.steps:
+            errors.append("Workflow must have at least one step")
+        for i, step in enumerate(self.steps):
+            if not step.tool_id.strip():
+                errors.append(f"Step {i}: tool_id cannot be empty")
+            if not step.action.strip():
+                errors.append(f"Step {i}: action cannot be empty")
+            if step.max_retries < 0:
+                errors.append(f"Step {i}: max_retries cannot be negative")
+        return errors
