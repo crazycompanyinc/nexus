@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
-from nexus.core.models import AgentToolBinding, ToolCall, ToolPlugin, Workflow
+from nexus.core.models import AgentToolBinding, ToolCall, ToolPlugin, Workflow, WorkflowStep
 
 
 _DEFAULT_MAX_CALLS = 10_000
