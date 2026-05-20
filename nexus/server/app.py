@@ -131,8 +131,19 @@ def create_app() -> FastAPI:
         return {"plugins": [plugin.id for plugin in manager.install_all_builtins()]}
 
     @app.get("/plugins")
-    async def plugins() -> list[dict[str, Any]]:
-        return [asdict(plugin) for plugin in manager.list_plugins()]
+    async def plugins(
+        offset: int = Query(0, ge=0),
+        limit: int = Query(50, ge=1, le=200),
+    ) -> dict[str, Any]:
+        all_plugins = manager.list_plugins()
+        items = [asdict(p) for p in all_plugins[offset : offset + limit]]
+        return {
+            "items": items,
+            "total": len(all_plugins),
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + limit < len(all_plugins),
+        }
 
     @app.get("/discover")
     async def discover() -> list[dict[str, object]]:
