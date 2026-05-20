@@ -93,7 +93,7 @@ class TestCircuitBreaker:
         r = repr(cb)
         assert "closed" in r
         assert "0/5" in r
-        assert "30.0s" in r
+        assert "30s" in r
 
 
 class TestAsyncUnifiedToolAPI:
