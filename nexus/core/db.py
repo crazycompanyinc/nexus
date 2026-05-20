@@ -229,6 +229,33 @@ class NexusStore:
                 return call
         return None
 
+    def agent_calls(self, agent_id: str, *, status: str | None = None, limit: int | None = None) -> list[ToolCall]:
+        """Return tool calls for a specific agent, optionally filtered by status.
+
+        Iterates in reverse chronological order (most recent first).
+
+        Args:
+            agent_id: The agent identifier to filter by.
+            status: Optional CallStatus value to filter by (e.g. 'success', 'error').
+            limit: Maximum number of calls to return. None returns all.
+
+        Returns:
+            List of ToolCall instances for the agent, most recent first.
+
+        Example:
+            >>> calls = store.agent_calls("agent-1", status="error", limit=5)
+        """
+        results: list[ToolCall] = []
+        for call in reversed(self.calls):
+            if call.agent_id != agent_id:
+                continue
+            if status is not None and call.status != status:
+                continue
+            results.append(call)
+            if limit is not None and len(results) >= limit:
+                break
+        return results
+
     def __repr__(self) -> str:
         return (
             f"NexusStore(agents={len(self.agents)}, plugins={len(self.plugins)}, "
