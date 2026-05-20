@@ -62,6 +62,31 @@ class UsageMetrics:
             "latency_ms": latency_stats(durations),
         }
 
+    def error_summary(self, *, since: datetime | None = None, until: datetime | None = None) -> dict[str, Any]:
+        """Return a summary of errors grouped by tool and error message.
+
+        Args:
+            since: Only include calls at or after this datetime.
+            until: Only include calls at or before this datetime.
+
+        Returns:
+            Dict with total_errors, by_tool, and top_errors keys.
+        """
+        calls = self._filter_calls(since=since, until=until)
+        error_calls = [c for c in calls if c.status == "error"]
+        by_tool: dict[str, int] = Counter(call.tool_id for call in error_calls)
+        error_messages: Counter[str] = Counter()
+        for call in error_calls:
+            msg = (call.result or {}).get("error", "unknown") if isinstance(call.result, dict) else "unknown"
+            # Truncate long error messages for grouping
+            key = msg[:120] if len(msg) > 120 else msg
+            error_messages[key] += 1
+        return {
+            "total_errors": len(error_calls),
+            "by_tool": dict(by_tool),
+            "top_errors": dict(error_messages.most_common(10)),
+        }
+
     def _filter_calls(
         self,
         *,
@@ -74,3 +99,8 @@ class UsageMetrics:
         if until is not None:
             calls = [c for c in calls if c.called_at <= until]
         return calls
+
+    def __repr__(self) -> str:
+        total = len(self.store.calls)
+        errors = sum(1 for c in self.store.calls if c.status == "error")
+        return f"UsageMetrics(total_calls={total}, errors={errors}, agents={len(self.store.agents)})"
