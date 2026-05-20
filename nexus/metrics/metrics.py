@@ -36,6 +36,8 @@ class UsageMetrics:
         }
 
     def tool_usage(self, tool_id: str) -> dict[str, Any]:
+        if not isinstance(tool_id, str) or not tool_id.strip():
+            raise ValueError(f"tool_id must be a non-empty string, got {tool_id!r}")
         calls = [call for call in self.store.calls if call.tool_id == tool_id]
         durations = [call.duration_ms for call in calls if call.duration_ms > 0]
         return {
@@ -46,6 +48,8 @@ class UsageMetrics:
         }
 
     def agent_usage(self, agent_id: str) -> dict[str, Any]:
+        if not isinstance(agent_id, str) or not agent_id.strip():
+            raise ValueError(f"agent_id must be a non-empty string, got {agent_id!r}")
         calls = [call for call in self.store.calls if call.agent_id == agent_id]
         actions: dict[str, list[str]] = defaultdict(list)
         for call in calls:
