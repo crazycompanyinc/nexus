@@ -3,7 +3,8 @@ from __future__ import annotations
 import pytest
 
 from nexus.composition.workflow import Pipeline, WorkflowBuilder, StepResult
-from nexus.core.models import WorkflowStep
+from nexus.core.circuit_breaker import CircuitBreaker
+from nexus.core.models import ToolPlugin, WorkflowStep
 
 
 def test_pipeline_retry_on_failure(hub):
