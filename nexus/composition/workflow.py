@@ -13,7 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class WorkflowBuilder:
+    """Creates, updates, and manages workflow definitions.
+
+    Workflows are ordered sequences of tool calls with per-step retry,
+    fallback, and conditional execution support.
+
+    Example:
+        >>> builder = WorkflowBuilder(store)
+        >>> wf = builder.create("deploy", steps, "admin")
+    """
+
     def __init__(self, store: NexusStore) -> None:
+        """Initialize the WorkflowBuilder.
+
+        Args:
+            store: NexusStore instance for persistence.
+        """
         self.store = store
 
     def create(
@@ -24,6 +39,25 @@ class WorkflowBuilder:
         description: str = "",
         trigger: str = "manual",
     ) -> Workflow:
+        """Create and persist a new workflow.
+
+        Validates the workflow structure before saving. Each step must
+        contain 'tool_id' and 'action' keys.
+
+        Args:
+            name: Human-readable workflow name.
+            steps: List of step dicts with tool_id, action, and optional params.
+            created_by: Identifier of the user/system creating the workflow.
+            description: Optional workflow description.
+            trigger: Workflow trigger type (manual, scheduled, event).
+
+        Returns:
+            The created Workflow instance.
+
+        Raises:
+            ValueError: If name/created_by is empty, steps is empty, or validation fails.
+            TypeError: If steps is not a list.
+        """
         if not isinstance(name, str) or not name.strip():
             raise ValueError(f"Workflow name must be a non-empty string, got {name!r}")
         if not isinstance(created_by, str) or not created_by.strip():

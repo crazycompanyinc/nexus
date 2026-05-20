@@ -42,6 +42,32 @@ class PerformanceTracker:
                 result[tool_id] = {"avg_ms": 0, "max_ms": 0, "min_ms": 0, "p95": 0, "calls": 0}
         return result
 
+    def by_agent(self) -> dict[str, dict[str, Any]]:
+        """Return latency performance metrics broken down by agent.
+
+        Computes avg/max/min/p95 latency and call count per agent.
+
+        Returns:
+            Dict mapping agent_id to performance dict with keys:
+            avg_ms, max_ms, min_ms, p95, calls.
+        """
+        result: dict[str, dict[str, Any]] = {}
+        for agent_id in self.store.agents:
+            durations = [call.duration_ms for call in self.store.calls if call.agent_id == agent_id and call.duration_ms > 0]
+            if durations:
+                sorted_d = sorted(durations)
+                n = len(sorted_d)
+                result[agent_id] = {
+                    "avg_ms": round(sum(sorted_d) / n, 3),
+                    "max_ms": round(sorted_d[-1], 3),
+                    "min_ms": round(sorted_d[0], 3),
+                    "p95": round(percentile(sorted_d, 95), 3),
+                    "calls": n,
+                }
+            else:
+                result[agent_id] = {"avg_ms": 0, "max_ms": 0, "min_ms": 0, "p95": 0, "calls": 0}
+        return result
+
     def __repr__(self) -> str:
         lat = self.latency()
         return (
