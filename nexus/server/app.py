@@ -137,6 +137,13 @@ def create_app() -> FastAPI:
             content=ErrorResponse(error="not_found", detail=str(exc), code="NOT_FOUND").model_dump(),
         )
 
+    @app.exception_handler(ValueError)
+    async def bad_request_handler(request: Request, exc: ValueError) -> JSONResponse:
+        return JSONResponse(
+            status_code=400,
+            content=ErrorResponse(error="bad_request", detail=str(exc), code="BAD_REQUEST").model_dump(),
+        )
+
     @app.post("/init")
     async def init() -> dict[str, Any]:
         return {"plugins": [plugin.id for plugin in manager.install_all_builtins()]}
