@@ -337,7 +337,7 @@ class TestPerformanceTrackerRepr:
         from nexus.metrics.performance import PerformanceTracker
 
         store = NexusStore()
-        tc = ToolCall(agent_id="a1", tool_id="t1", action="read", status=CallStatus.SUCCESS.value)
+        tc = ToolCall(agent_id="a1", tool_id="t1", action="read", params={}, status=CallStatus.SUCCESS.value)
         tc.duration_ms = 42.5
         store.record_call(tc)
         pt = PerformanceTracker(store)
