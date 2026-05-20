@@ -67,12 +67,6 @@ class ErrorResponse(BaseModel):
     code: str | None = None
 
 
-class ErrorResponse(BaseModel):
-    error: str
-    detail: str | None = None
-    code: str | None = None
-
-
 class CallRequest(BaseModel):
     agent_id: str
     action: str
