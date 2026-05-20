@@ -205,3 +205,180 @@ class TestCorrelationId:
         configure_logging(level=logging.DEBUG, component="nexus-test")
         logger = logging.getLogger("nexus")
         assert logger.level == logging.DEBUG
+
+
+class TestUsageMetricsRepr:
+    def test_repr_empty(self):
+        from nexus.core.db import NexusStore
+        from nexus.metrics.metrics import UsageMetrics
+
+        store = NexusStore()
+        m = UsageMetrics(store)
+        r = repr(m)
+        assert "total_calls=0" in r
+        assert "errors=0" in r
+        assert "agents=0" in r
+
+    def test_repr_with_data(self):
+        from nexus.core.db import NexusStore
+        from nexus.core.models import CallStatus, ToolCall
+        from nexus.metrics.metrics import UsageMetrics
+
+        store = NexusStore()
+        store.register_agent("a1")
+        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", status=CallStatus.SUCCESS.value))
+        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", status=CallStatus.ERROR.value))
+        m = UsageMetrics(store)
+        r = repr(m)
+        assert "total_calls=2" in r
+        assert "errors=1" in r
+        assert "agents=1" in r
+
+
+class TestUsageMetricsErrorSummary:
+    def test_empty_store(self):
+        from nexus.core.db import NexusStore
+        from nexus.metrics.metrics import UsageMetrics
+
+        store = NexusStore()
+        m = UsageMetrics(store)
+        result = m.error_summary()
+        assert result == {"total_errors": 0, "by_tool": {}, "top_errors": {}}
+
+    def test_no_errors(self):
+        from nexus.core.db import NexusStore
+        from nexus.core.models import CallStatus, ToolCall
+        from nexus.metrics.metrics import UsageMetrics
+
+        store = NexusStore()
+        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", status=CallStatus.SUCCESS.value))
+        m = UsageMetrics(store)
+        result = m.error_summary()
+        assert result["total_errors"] == 0
+
+    def test_with_errors(self):
+        from nexus.core.db import NexusStore
+        from nexus.core.models import CallStatus, ToolCall
+        from nexus.metrics.metrics import UsageMetrics
+
+        store = NexusStore()
+        store.record_call(ToolCall(
+            agent_id="a1", tool_id="t1", action="read",
+            status=CallStatus.ERROR.value,
+            result={"error": "connection refused"},
+        ))
+        store.record_call(ToolCall(
+            agent_id="a1", tool_id="t1", action="read",
+            status=CallStatus.ERROR.value,
+            result={"error": "connection refused"},
+        ))
+        store.record_call(ToolCall(
+            agent_id="a1", tool_id="t2", action="write",
+            status=CallStatus.ERROR.value,
+            result={"error": "timeout"},
+        ))
+        m = UsageMetrics(store)
+        result = m.error_summary()
+        assert result["total_errors"] == 3
+        assert result["by_tool"]["t1"] == 2
+        assert result["by_tool"]["t2"] == 1
+        assert "connection refused" in result["top_errors"]
+        assert result["top_errors"]["connection refused"] == 2
+
+    def test_error_message_truncation(self):
+        from nexus.core.db import NexusStore
+        from nexus.core.models import CallStatus, ToolCall
+        from nexus.metrics.metrics import UsageMetrics
+
+        store = NexusStore()
+        long_msg = "x" * 200
+        store.record_call(ToolCall(
+            agent_id="a1", tool_id="t1", action="read",
+            status=CallStatus.ERROR.value,
+            result={"error": long_msg},
+        ))
+        m = UsageMetrics(store)
+        result = m.error_summary()
+        # Error message should be truncated to 120 chars
+        key = list(result["top_errors"].keys())[0]
+        assert len(key) == 120
+
+    def test_non_dict_result_error(self):
+        from nexus.core.db import NexusStore
+        from nexus.core.models import CallStatus, ToolCall
+        from nexus.metrics.metrics import UsageMetrics
+
+        store = NexusStore()
+        store.record_call(ToolCall(
+            agent_id="a1", tool_id="t1", action="read",
+            status=CallStatus.ERROR.value,
+            result=None,
+        ))
+        m = UsageMetrics(store)
+        result = m.error_summary()
+        assert result["total_errors"] == 1
+        assert result["top_errors"]["unknown"] == 1
+
+
+class TestPerformanceTrackerRepr:
+    def test_repr_empty(self):
+        from nexus.core.db import NexusStore
+        from nexus.metrics.performance import PerformanceTracker
+
+        store = NexusStore()
+        pt = PerformanceTracker(store)
+        r = repr(pt)
+        assert "calls=0" in r
+        assert "avg=0.0ms" in r
+
+    def test_repr_with_data(self):
+        from nexus.core.db import NexusStore
+        from nexus.core.models import CallStatus, ToolCall
+        from nexus.metrics.performance import PerformanceTracker
+
+        store = NexusStore()
+        tc = ToolCall(agent_id="a1", tool_id="t1", action="read", status=CallStatus.SUCCESS.value)
+        tc.duration_ms = 42.5
+        store.record_call(tc)
+        pt = PerformanceTracker(store)
+        r = repr(pt)
+        assert "calls=1" in r
+        assert "avg=42.5ms" in r
+
+
+class TestWorkflowBuilderValidation:
+    def test_empty_name_raises(self):
+        from nexus.core.db import NexusStore
+        from nexus.composition.workflow import WorkflowBuilder
+
+        store = NexusStore()
+        wb = WorkflowBuilder(store)
+        with pytest.raises(ValueError, match="non-empty string"):
+            wb.create(name="", steps=[{"tool_id": "t1", "action": "read"}], created_by="user1")
+
+    def test_empty_created_by_raises(self):
+        from nexus.core.db import NexusStore
+        from nexus.composition.workflow import WorkflowBuilder
+
+        store = NexusStore()
+        wb = WorkflowBuilder(store)
+        with pytest.raises(ValueError, match="non-empty string"):
+            wb.create(name="test", steps=[{"tool_id": "t1", "action": "read"}], created_by="  ")
+
+    def test_empty_steps_raises(self):
+        from nexus.core.db import NexusStore
+        from nexus.composition.workflow import WorkflowBuilder
+
+        store = NexusStore()
+        wb = WorkflowBuilder(store)
+        with pytest.raises(ValueError, match="at least one step"):
+            wb.create(name="test", steps=[], created_by="user1")
+
+    def test_non_list_steps_raises(self):
+        from nexus.core.db import NexusStore
+        from nexus.composition.workflow import WorkflowBuilder
+
+        store = NexusStore()
+        wb = WorkflowBuilder(store)
+        with pytest.raises(TypeError, match="steps must be a list"):
+            wb.create(name="test", steps="not-a-list", created_by="user1")
