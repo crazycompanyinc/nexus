@@ -128,6 +128,63 @@ class UnifiedToolAPI:
             call.duration_ms = (perf_counter() - started) * 1000
             self.store.record_call(call)
 
+    def batch_call(
+        self,
+        agent_id: str,
+        calls: list[dict[str, Any]],
+        fail_fast: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Execute multiple tool calls in sequence.
+
+        Each call dict must contain 'tool_id' and 'action', and may contain
+        'params' and 'fallback_tools'. Results are returned in the same order.
+
+        Args:
+            agent_id: Unique identifier for the calling agent.
+            calls: List of call dicts, each with tool_id, action, optional params/fallback_tools.
+            fail_fast: If True, stop on first failure and raise.
+
+        Returns:
+            List of result dicts with 'result', 'success', 'error', 'duration_ms' keys.
+
+        Raises:
+            PermissionError: If agent lacks permission (always raised immediately).
+            RuntimeError: If fail_fast is True and a call fails.
+        """
+        results: list[dict[str, Any]] = []
+        for call_spec in calls:
+            tool_id = call_spec["tool_id"]
+            action = call_spec["action"]
+            params = call_spec.get("params", {})
+            fallback_tools = call_spec.get("fallback_tools", [])
+            started = perf_counter()
+            try:
+                result = self.call(agent_id, tool_id, action, params, fallback_tools)
+                results.append({
+                    "tool_id": tool_id,
+                    "action": action,
+                    "result": result,
+                    "success": True,
+                    "error": None,
+                    "duration_ms": round((perf_counter() - started) * 1000, 2),
+                })
+            except PermissionError:
+                raise
+            except Exception as exc:
+                results.append({
+                    "tool_id": tool_id,
+                    "action": action,
+                    "result": None,
+                    "success": False,
+                    "error": str(exc),
+                    "duration_ms": round((perf_counter() - started) * 1000, 2),
+                })
+                if fail_fast:
+                    raise RuntimeError(
+                        f"Batch call failed at {tool_id}.{action}: {exc}"
+                    ) from exc
+        return results
+
     def grant(self, agent_id: str, tool_id: str, level: str) -> None:
         self.access.grant(agent_id, tool_id, level)
 
