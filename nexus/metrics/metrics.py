@@ -62,8 +62,8 @@ class UsageMetrics:
         *,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list:
-        calls = list(self.store.calls)
+    ) -> list[ToolCall]:
+        calls: list[ToolCall] = list(self.store.calls)
         if since is not None:
             calls = [c for c in calls if c.called_at >= since]
         if until is not None:
