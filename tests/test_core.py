@@ -102,3 +102,49 @@ def test_workflow_step_repr():
     assert "p1" in r
     assert "read" in r
     assert "3" in r
+
+
+def test_store_clear():
+    store = NexusStore()
+    store.register_agent("a1")
+    store.upsert_plugin(ToolPlugin("p1", "P1", "desc", "1", "api", ["read"]))
+    store.bind_tool(AgentToolBinding("a1", "p1", "read"))
+    store.record_call(ToolCall("a1", "p1", "read", {}))
+    store.save_workflow(Workflow("w1", "wf", "desc", [WorkflowStep("p1", "read")]))
+    store.audit("test")
+    store.clear()
+    assert len(store.agents) == 0
+    assert len(store.plugins) == 0
+    assert len(store.bindings) == 0
+    assert len(store.calls) == 0
+    assert len(store.workflows) == 0
+    assert len(store.audit_events) == 0
+
+
+def test_workflow_validate_valid():
+    wf = Workflow("w1", "good", "desc", [WorkflowStep("p1", "read")])
+    assert wf.validate() == []
+
+
+def test_workflow_validate_empty_name():
+    wf = Workflow("w1", "  ", "desc", [WorkflowStep("p1", "read")])
+    errors = wf.validate()
+    assert any("name" in e.lower() for e in errors)
+
+
+def test_workflow_validate_no_steps():
+    wf = Workflow("w1", "bad", "desc", [])
+    errors = wf.validate()
+    assert any("step" in e.lower() for e in errors)
+
+
+def test_workflow_validate_empty_step_fields():
+    wf = Workflow("w1", "bad", "desc", [WorkflowStep("", "")])
+    errors = wf.validate()
+    assert len(errors) >= 2
+
+
+def test_workflow_validate_negative_retries():
+    wf = Workflow("w1", "bad", "desc", [WorkflowStep("p1", "read", max_retries=-1)])
+    errors = wf.validate()
+    assert any("retries" in e.lower() for e in errors)
