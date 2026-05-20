@@ -148,3 +148,42 @@ def test_workflow_validate_negative_retries():
     wf = Workflow("w1", "bad", "desc", [WorkflowStep("p1", "read", max_retries=-1)])
     errors = wf.validate()
     assert any("retries" in e.lower() for e in errors)
+
+
+def test_store_export_import():
+    store = NexusStore()
+    store.register_agent("a1")
+    store.upsert_plugin(ToolPlugin("p1", "P1", "desc", "1", "api", ["read"]))
+    store.bind_tool(AgentToolBinding("a1", "p1", "read"))
+    store.audit("test.event", key="value")
+
+    exported = store.export()
+    assert "a1" in exported["agents"]
+    assert len(exported["plugins"]) == 1
+    assert len(exported["bindings"]) == 1
+
+    new_store = NexusStore()
+    new_store.import_(exported)
+    assert "a1" in new_store.agents
+    assert "p1" in new_store.plugins
+    assert new_store.get_binding("a1", "p1") is not None
+
+
+def test_store_import_replaces_data():
+    store = NexusStore()
+    store.register_agent("old_agent")
+    exported = store.export()
+
+    store.register_agent("new_agent")
+    assert len(store.agents) == 2
+
+    store.import_(exported)
+    assert store.agents == {"old_agent"}
+
+
+def test_store_export_empty():
+    store = NexusStore()
+    exported = store.export()
+    assert exported["agents"] == []
+    assert exported["plugins"] == []
+    assert exported["calls"] == []
