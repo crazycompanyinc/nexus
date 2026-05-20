@@ -278,7 +278,9 @@ class NexusStore:
             raise ValueError(f"Import data missing required keys: {sorted(missing)}")
         self.clear()
         for agent_id in data.get("agents", []):
-            self.agents.add(agent_id)
+            if not isinstance(agent_id, str) or not agent_id.strip():
+                raise ValueError(f"Invalid agent_id in import data: {agent_id!r}")
+            self.agents.add(agent_id.strip())
         for plugin_dict in data.get("plugins", []):
             plugin = ToolPlugin(**plugin_dict)
             self.plugins[plugin.id] = plugin
