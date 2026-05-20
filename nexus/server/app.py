@@ -293,9 +293,49 @@ def create_app() -> FastAPI:
         api.access.revoke(agent_id, tool_id)
         return {"revoked": True, "agent_id": agent_id, "tool_id": tool_id}
 
+    @app.get("/agents")
+    async def list_agents() -> dict[str, Any]:
+        """List all registered agents with their binding counts."""
+        agents = sorted(store.agents)
+        items = []
+        for agent_id in agents:
+            bindings = api.access.list_agent_permissions(agent_id)
+            recent = [c for c in store.calls if c.agent_id == agent_id]
+            items.append({
+                "agent_id": agent_id,
+                "bindings": len(bindings),
+                "total_calls": len(recent),
+                "last_called_at": recent[-1].called_at.isoformat() if recent else None,
+            })
+        return {"items": items, "total": len(agents)}
+
+    @app.get("/agents/{agent_id}/usage")
+    async def agent_usage(agent_id: str) -> dict[str, Any]:
+        """Get detailed usage metrics for a specific agent."""
+        if agent_id not in store.agents:
+            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+        return UsageMetrics(store).agent_usage(agent_id)
+
     @app.get("/metrics")
-    async def metrics() -> dict[str, Any]:
-        return UsageMetrics(store).summary()
+    async def metrics(
+        since: str | None = Query(None, description="ISO 8601 start datetime (e.g. 2026-01-01T00:00:00Z)"),
+        until: str | None = Query(None, description="ISO 8601 end datetime"),
+    ) -> dict[str, Any]:
+        """Get usage metrics, optionally filtered by time range."""
+        from datetime import datetime, timezone
+        parsed_since = None
+        parsed_until = None
+        if since:
+            try:
+                parsed_since = datetime.fromisoformat(since.replace("Z", "+00:00"))
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid 'since' datetime: {since}")
+        if until:
+            try:
+                parsed_until = datetime.fromisoformat(until.replace("Z", "+00:00"))
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid 'until' datetime: {until}")
+        return UsageMetrics(store).summary(since=parsed_since, until=parsed_until)
 
     @app.get("/metrics/performance")
     async def performance() -> dict[str, Any]:
