@@ -91,6 +91,15 @@ class NexusStore:
     def __bool__(self) -> bool:
         return True
 
+    def clear(self) -> None:
+        """Clear all stored data. Useful for testing."""
+        self.agents.clear()
+        self.plugins.clear()
+        self.bindings.clear()
+        self.calls.clear()
+        self.workflows.clear()
+        self.audit_events.clear()
+
     def recent_calls(self, n: int = 10) -> list[ToolCall]:
         return list(self.calls)[-n:]
 
