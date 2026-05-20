@@ -10,11 +10,13 @@ from nexus.metrics.performance import PerformanceTracker
 
 def _make_call(agent_id: str, tool_id: str, action: str = "read",
                status: str = "success", duration_ms: float = 10.0,
-               called_at: datetime | None = None) -> ToolCall:
+               called_at: datetime | None = None,
+               params: dict | None = None) -> ToolCall:
     call = ToolCall(
         agent_id=agent_id,
         tool_id=tool_id,
         action=action,
+        params=params or {},
         status=status,
         duration_ms=duration_ms,
     )
