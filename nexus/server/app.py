@@ -80,6 +80,16 @@ class BindingRequest(BaseModel):
     tool_id: str
     level: str
 
+    @field_validator("level")
+    @classmethod
+    def validate_level(cls, v: str) -> str:
+        from nexus.core.models import PermissionLevel
+
+        valid = {PermissionLevel.READ.value, PermissionLevel.WRITE.value, PermissionLevel.ADMIN.value}
+        if v not in valid:
+            raise ValueError(f"Invalid permission level '{v}': must be one of {sorted(valid)}")
+        return v
+
 
 class WorkflowRequest(BaseModel):
     name: str
