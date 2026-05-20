@@ -24,6 +24,14 @@ class WorkflowBuilder:
         description: str = "",
         trigger: str = "manual",
     ) -> Workflow:
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"Workflow name must be a non-empty string, got {name!r}")
+        if not isinstance(created_by, str) or not created_by.strip():
+            raise ValueError(f"created_by must be a non-empty string, got {created_by!r}")
+        if not isinstance(steps, list):
+            raise TypeError(f"steps must be a list, got {type(steps).__name__}")
+        if not steps:
+            raise ValueError("steps must contain at least one step")
         workflow_steps = [
             WorkflowStep(
                 tool_id=step["tool_id"],
