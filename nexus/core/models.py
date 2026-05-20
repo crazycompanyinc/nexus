@@ -70,6 +70,24 @@ class WorkflowStatus(str, Enum):
 
 @dataclass(slots=True)
 class ToolPlugin:
+    """Represents a registered tool plugin with its metadata and capabilities.
+
+    Attributes:
+        id: Unique plugin identifier.
+        name: Human-readable plugin name.
+        description: Brief description of the plugin's purpose.
+        version: Semantic version string.
+        plugin_type: Integration type (api, cli, library, etc.).
+        capabilities: List of action strings the plugin supports.
+        endpoint: Optional URL endpoint for the plugin.
+        auth_required: Whether authentication is needed.
+        auth_type: Optional authentication type identifier.
+        config_schema: JSON-serializable configuration schema.
+        health_check_endpoint: Optional health check URL.
+        status: Current plugin lifecycle status.
+        registered_at: Timestamp of plugin registration.
+    """
+
     id: str
     name: str
     description: str
@@ -93,6 +111,16 @@ class ToolPlugin:
 
 @dataclass(slots=True)
 class AgentToolBinding:
+    """Represents a binding between an agent and a tool with specific permissions.
+
+    Attributes:
+        agent_id: Unique identifier for the agent.
+        tool_id: Unique identifier for the tool.
+        permissions: Permission level granted (read, write, admin).
+        config: Optional configuration overrides for this binding.
+        bound_at: Timestamp when the binding was created.
+    """
+
     agent_id: str
     tool_id: str
     permissions: str
