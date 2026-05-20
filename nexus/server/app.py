@@ -268,6 +268,12 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, Any]:
         return manager.health()
 
+    @app.get("/version")
+    async def version() -> dict[str, str]:
+        """Return the Nexus API version."""
+        from nexus import __version__
+        return {"version": __version__}
+
     app.state.store = store
     app.state.manager = manager
     app.state.api = api
