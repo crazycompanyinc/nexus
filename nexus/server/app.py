@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from nexus.api.unified import UnifiedToolAPI
@@ -13,6 +15,12 @@ from nexus.discovery.discovery import ToolDiscovery
 from nexus.metrics.metrics import UsageMetrics
 from nexus.permissions.access import AccessControl
 from nexus.plugins.manager import PluginManager
+
+
+class ErrorResponse(BaseModel):
+    error: str
+    detail: str | None = None
+    code: str | None = None
 
 
 class CallRequest(BaseModel):
@@ -42,6 +50,28 @@ def create_app() -> FastAPI:
     workflows = WorkflowBuilder(store)
     pipeline = Pipeline(api, store)
     app = FastAPI(title="Nexus", version="0.1.0")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.exception_handler(PermissionError)
+    async def permission_error_handler(request: Request, exc: PermissionError) -> JSONResponse:
+        return JSONResponse(
+            status_code=403,
+            content=ErrorResponse(error="permission_denied", detail=str(exc), code="FORBIDDEN").model_dump(),
+        )
+
+    @app.exception_handler(KeyError)
+    async def not_found_handler(request: Request, exc: KeyError) -> JSONResponse:
+        return JSONResponse(
+            status_code=404,
+            content=ErrorResponse(error="not_found", detail=str(exc), code="NOT_FOUND").model_dump(),
+        )
 
     @app.post("/init")
     async def init() -> dict[str, Any]:
