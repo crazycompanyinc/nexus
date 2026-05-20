@@ -18,6 +18,12 @@ from nexus.server.app import create_app
 
 
 class Runtime:
+    """Holds the shared runtime state for CLI commands.
+
+    Manages the store, plugin manager, API, workflow builder, and pipeline
+    used by all CLI command handlers.
+    """
+
     def __init__(self) -> None:
         self.store = NexusStore()
         self.manager = PluginManager(self.store)

@@ -45,42 +45,118 @@ class NexusStore:
         self._max_audit = max_audit_events
 
     def register_agent(self, agent_id: str) -> None:
+        """Register an agent in the store.
+
+        Args:
+            agent_id: Unique identifier for the agent.
+        """
         self.agents.add(agent_id)
 
     def upsert_plugin(self, plugin: ToolPlugin) -> None:
+        """Insert or update a tool plugin in the store.
+
+        Args:
+            plugin: The ToolPlugin instance to store.
+        """
         self.plugins[plugin.id] = plugin
 
     def bind_tool(self, binding: AgentToolBinding) -> None:
+        """Create an agent-tool binding, auto-registering the agent if needed.
+
+        Args:
+            binding: The AgentToolBinding to store.
+        """
         self.register_agent(binding.agent_id)
         self.bindings[(binding.agent_id, binding.tool_id)] = binding
 
     def unbind_tool(self, agent_id: str, tool_id: str) -> None:
+        """Remove an agent-tool binding.
+
+        Args:
+            agent_id: The agent identifier.
+            tool_id: The tool identifier.
+        """
         self.bindings.pop((agent_id, tool_id), None)
 
     def get_binding(self, agent_id: str, tool_id: str) -> AgentToolBinding | None:
+        """Retrieve an agent-tool binding.
+
+        Args:
+            agent_id: The agent identifier.
+            tool_id: The tool identifier.
+
+        Returns:
+            The AgentToolBinding if found, None otherwise.
+        """
         return self.bindings.get((agent_id, tool_id))
 
     def record_call(self, call: ToolCall) -> ToolCall:
+        """Record a tool call in the store.
+
+        Args:
+            call: The ToolCall instance to record.
+
+        Returns:
+            The recorded ToolCall instance.
+        """
         self.calls.append(call)
         return call
 
     def save_workflow(self, workflow: Workflow) -> Workflow:
+        """Persist a workflow in the store.
+
+        Args:
+            workflow: The Workflow instance to save.
+
+        Returns:
+            The saved Workflow instance.
+        """
         self.workflows[workflow.id] = workflow
         return workflow
 
     def get_workflow(self, workflow_id: str) -> Workflow | None:
+        """Retrieve a workflow by its ID.
+
+        Args:
+            workflow_id: The unique workflow identifier.
+
+        Returns:
+            The Workflow if found, None otherwise.
+        """
         return self.workflows.get(workflow_id)
 
     def delete_workflow(self, workflow_id: str) -> bool:
+        """Delete a workflow by its ID.
+
+        Args:
+            workflow_id: The unique workflow identifier.
+
+        Returns:
+            True if the workflow was deleted, False if not found.
+        """
         if workflow_id in self.workflows:
             del self.workflows[workflow_id]
             return True
         return False
 
     def list_workflows(self) -> list[Workflow]:
+        """List all stored workflows.
+
+        Returns:
+            A list of all Workflow instances.
+        """
         return list(self.workflows.values())
 
     def audit(self, event_type: str, **payload: Any) -> dict[str, Any]:
+        """Record an audit event.
+
+        Args:
+            event_type: The type of audit event.
+            **payload: Additional event data.
+
+        Returns:
+            The recorded audit event dict.
+        """
         event = {"type": event_type, **payload}
         self.audit_events.append(event)
         return event
@@ -101,9 +177,26 @@ class NexusStore:
         self.audit_events.clear()
 
     def recent_calls(self, n: int = 10) -> list[ToolCall]:
+        """Return the most recent tool calls.
+
+        Args:
+            n: Maximum number of calls to return.
+
+        Returns:
+            A list of up to n recent ToolCall instances.
+        """
         return list(self.calls)[-n:]
 
     def snapshot(self, *, call_limit: int = 100, audit_limit: int = 100) -> dict[str, Any]:
+        """Create a full snapshot of the store state.
+
+        Args:
+            call_limit: Maximum number of calls to include.
+            audit_limit: Maximum number of audit events to include.
+
+        Returns:
+            A dict containing agents, plugins, bindings, calls, workflows, and audit events.
+        """
         all_calls = list(self.calls)
         all_audit = list(self.audit_events)
         return {
@@ -119,6 +212,14 @@ class NexusStore:
 
     @staticmethod
     def _to_dict(value: Any) -> Any:
+        """Convert a dataclass instance to a dict, or return as-is.
+
+        Args:
+            value: The value to convert.
+
+        Returns:
+            A dict if the value is a dataclass, otherwise the original value.
+        """
         if is_dataclass(value):
             return asdict(value)
         return value
