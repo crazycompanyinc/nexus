@@ -203,7 +203,17 @@ class NexusStore:
 
         Args:
             data: Dict produced by export().
+
+        Raises:
+            ValueError: If required top-level keys are missing or data is malformed.
+            TypeError: If data is not a dict.
         """
+        if not isinstance(data, dict):
+            raise TypeError(f"Expected dict for import, got {type(data).__name__}")
+        required_keys = {"agents", "plugins", "bindings", "calls", "workflows", "audit_events"}
+        missing = required_keys - data.keys()
+        if missing:
+            raise ValueError(f"Import data missing required keys: {sorted(missing)}")
         self.clear()
         for agent_id in data.get("agents", []):
             self.agents.add(agent_id)
@@ -217,8 +227,9 @@ class NexusStore:
             call = ToolCall(**call_dict)
             self.calls.append(call)
         for wf_dict in data.get("workflows", []):
-            steps = [WorkflowStep(**s) for s in wf_dict.pop("steps", [])]
-            workflow = Workflow(**wf_dict, steps=steps)
+            wf_data = dict(wf_dict)
+            steps = [WorkflowStep(**s) for s in wf_data.pop("steps", [])]
+            workflow = Workflow(**wf_data, steps=steps)
             self.workflows[workflow.id] = workflow
         for event in data.get("audit_events", []):
             self.audit_events.append(event)
