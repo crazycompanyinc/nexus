@@ -12,13 +12,29 @@ _DEFAULT_MAX_AUDIT = 5_000
 
 
 class NexusStore:
-    """Small in-memory store used by all local Nexus surfaces."""
+    """Small in-memory store used by all local Nexus surfaces.
+
+    Stores agents, plugins, bindings, tool calls, workflows, and audit events.
+    Uses bounded deques for calls and audit events to prevent unbounded memory growth.
+
+    Example:
+        >>> store = NexusStore(max_calls=1000, max_audit_events=500)
+        >>> store.register_agent("agent-1")
+        >>> len(store)
+        0
+    """
 
     def __init__(
         self,
         max_calls: int = _DEFAULT_MAX_CALLS,
         max_audit_events: int = _DEFAULT_MAX_AUDIT,
     ) -> None:
+        """Initialize the store with bounded capacity.
+
+        Args:
+            max_calls: Maximum number of tool calls to retain (default 10000).
+            max_audit_events: Maximum audit events to retain (default 5000).
+        """
         self.agents: set[str] = set()
         self.plugins: dict[str, ToolPlugin] = {}
         self.bindings: dict[tuple[str, str], AgentToolBinding] = {}
