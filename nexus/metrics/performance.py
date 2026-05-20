@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import math
 from typing import Any
 
 from nexus.core.db import NexusStore
+from nexus.metrics._stats import latency_stats, percentile
 
 
 class PerformanceTracker:
@@ -12,27 +12,16 @@ class PerformanceTracker:
 
     def latency(self) -> dict[str, Any]:
         durations = [call.duration_ms for call in self.store.calls if call.duration_ms > 0]
-        if not durations:
-            return {"avg_ms": 0, "max_ms": 0, "min_ms": 0, "p50": 0, "p95": 0, "p99": 0, "count": 0}
-        sorted_d = sorted(durations)
-        n = len(sorted_d)
-
-        def percentile(p: float) -> float:
-            if n == 1:
-                return sorted_d[0]
-            k = (p / 100.0) * (n - 1)
-            f = math.floor(k)
-            c = min(f + 1, n - 1)
-            return sorted_d[f] + (k - f) * (sorted_d[c] - sorted_d[f])
-
+        stats = latency_stats(durations)
+        # Rename keys for backward-compatible API
         return {
-            "avg_ms": round(sum(sorted_d) / n, 3),
-            "max_ms": round(sorted_d[-1], 3),
-            "min_ms": round(sorted_d[0], 3),
-            "p50": round(percentile(50), 3),
-            "p95": round(percentile(95), 3),
-            "p99": round(percentile(99), 3),
-            "count": n,
+            "avg_ms": stats["avg"],
+            "max_ms": stats["max"],
+            "min_ms": stats["min"],
+            "p50": stats["p50"],
+            "p95": stats["p95"],
+            "p99": stats["p99"],
+            "count": stats["count"],
         }
 
     def by_tool(self) -> dict[str, dict[str, Any]]:
@@ -46,7 +35,7 @@ class PerformanceTracker:
                     "avg_ms": round(sum(sorted_d) / n, 3),
                     "max_ms": round(sorted_d[-1], 3),
                     "min_ms": round(sorted_d[0], 3),
-                    "p95": round(sorted_d[int(n * 0.95)] if n > 1 else sorted_d[0], 3),
+                    "p95": round(percentile(sorted_d, 95), 3),
                     "calls": n,
                 }
             else:
