@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import time
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -15,6 +16,55 @@ from nexus.discovery.discovery import ToolDiscovery
 from nexus.metrics.metrics import UsageMetrics
 from nexus.permissions.access import AccessControl
 from nexus.plugins.manager import PluginManager
+
+
+class RateLimitMiddleware:
+    """Simple in-memory sliding window rate limiter.
+
+    Limits each client IP to `max_requests` per `window_seconds`.
+    Returns HTTP 429 with Retry-After header when limit is exceeded.
+    """
+
+    def __init__(self, max_requests: int = 120, window_seconds: int = 60) -> None:
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._requests: dict[str, list[float]] = {}
+
+    async def check(self, request: Request) -> JSONResponse | None:
+        """Check rate limit for the request. Returns None if allowed, JSONResponse if denied."""
+        client = request.client.host if request.client else "unknown"
+        now = time.monotonic()
+        window_start = now - self.window_seconds
+
+        timestamps = self._requests.setdefault(client, [])
+        # Purge old entries
+        timestamps[:] = [t for t in timestamps if t > window_start]
+
+        if len(timestamps) >= self.max_requests:
+            retry_after = int(timestamps[0] + self.window_seconds - now) + 1
+            return JSONResponse(
+                status_code=429,
+                content={"error": "rate_limit_exceeded", "retry_after_seconds": retry_after},
+                headers={"Retry-After": str(retry_after)},
+            )
+
+        timestamps.append(now)
+        return None
+
+
+class PaginatedResponse(BaseModel):
+    """Standard paginated response envelope."""
+    items: list[Any]
+    total: int
+    offset: int
+    limit: int
+    has_more: bool
+
+
+class ErrorResponse(BaseModel):
+    error: str
+    detail: str | None = None
+    code: str | None = None
 
 
 class ErrorResponse(BaseModel):
