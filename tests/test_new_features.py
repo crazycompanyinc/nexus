@@ -251,7 +251,7 @@ class TestUsageMetricsErrorSummary:
         from nexus.metrics.metrics import UsageMetrics
 
         store = NexusStore()
-        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", status=CallStatus.SUCCESS.value))
+        store.record_call(ToolCall(agent_id="a1", tool_id="t1", action="read", params={}, status=CallStatus.SUCCESS.value))
         m = UsageMetrics(store)
         result = m.error_summary()
         assert result["total_errors"] == 0
@@ -263,17 +263,17 @@ class TestUsageMetricsErrorSummary:
 
         store = NexusStore()
         store.record_call(ToolCall(
-            agent_id="a1", tool_id="t1", action="read",
+            agent_id="a1", tool_id="t1", action="read", params={},
             status=CallStatus.ERROR.value,
             result={"error": "connection refused"},
         ))
         store.record_call(ToolCall(
-            agent_id="a1", tool_id="t1", action="read",
+            agent_id="a1", tool_id="t1", action="read", params={},
             status=CallStatus.ERROR.value,
             result={"error": "connection refused"},
         ))
         store.record_call(ToolCall(
-            agent_id="a1", tool_id="t2", action="write",
+            agent_id="a1", tool_id="t2", action="write", params={},
             status=CallStatus.ERROR.value,
             result={"error": "timeout"},
         ))
@@ -293,7 +293,7 @@ class TestUsageMetricsErrorSummary:
         store = NexusStore()
         long_msg = "x" * 200
         store.record_call(ToolCall(
-            agent_id="a1", tool_id="t1", action="read",
+            agent_id="a1", tool_id="t1", action="read", params={},
             status=CallStatus.ERROR.value,
             result={"error": long_msg},
         ))
@@ -310,7 +310,7 @@ class TestUsageMetricsErrorSummary:
 
         store = NexusStore()
         store.record_call(ToolCall(
-            agent_id="a1", tool_id="t1", action="read",
+            agent_id="a1", tool_id="t1", action="read", params={},
             status=CallStatus.ERROR.value,
             result=None,
         ))
