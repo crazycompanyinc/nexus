@@ -100,6 +100,55 @@ class UsageMetrics:
             calls = [c for c in calls if c.called_at <= until]
         return calls
 
+    def calls_over_time(
+        self,
+        *,
+        bucket: str = "hour",
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return call volume time-series data grouped by time bucket.
+
+        Useful for dashboards and trend analysis. Each bucket contains
+        the timestamp, total calls, and error count.
+
+        Args:
+            bucket: Time bucket size — "minute", "hour", or "day".
+            since: Only include calls at or after this datetime.
+            until: Only include calls at or before this datetime.
+
+        Returns:
+            List of dicts with keys: bucket (ISO timestamp), total, errors.
+
+        Raises:
+            ValueError: If bucket is not one of the supported values.
+
+        Example:
+            >>> series = metrics.calls_over_time(bucket="hour", since=yesterday)
+        """
+        valid_buckets = {"minute", "hour", "day"}
+        if bucket not in valid_buckets:
+            raise ValueError(f"bucket must be one of {sorted(valid_buckets)}, got {bucket!r}")
+        calls = self._filter_calls(since=since, until=until)
+        from collections import defaultdict
+
+        buckets: dict[str, dict[str, int]] = defaultdict(lambda: {"total": 0, "errors": 0})
+        for call in calls:
+            dt = call.called_at
+            if bucket == "minute":
+                key = dt.replace(second=0, microsecond=0).isoformat()
+            elif bucket == "hour":
+                key = dt.replace(minute=0, second=0, microsecond=0).isoformat()
+            else:  # day
+                key = dt.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+            buckets[key]["total"] += 1
+            if call.status == "error":
+                buckets[key]["errors"] += 1
+        return [
+            {"bucket": k, "total": v["total"], "errors": v["errors"]}
+            for k, v in sorted(buckets.items())
+        ]
+
     def __repr__(self) -> str:
         total = len(self.store.calls)
         errors = sum(1 for c in self.store.calls if c.status == "error")
