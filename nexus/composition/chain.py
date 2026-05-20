@@ -23,7 +23,8 @@ class ToolChain:
             )
         return results
 
-    def run_conditional(self, fail_fast: bool = True) -> list[Any]:
+    def __repr__(self) -> str:
+        return f"ToolChain(agent={self.agent_id!r}, steps={len(self.steps)})"
         """Run steps, optionally stopping on first failure (fail-fast mode).
 
         Args:
