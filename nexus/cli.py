@@ -98,6 +98,13 @@ def list_plugins(discover: bool) -> None:
 @click.option("--tool", "tool_id", required=True)
 @click.option("--level", default="read", type=click.Choice(["read", "write", "admin"]))
 def bind(agent: str, tool_id: str, level: str) -> None:
+    """Bind a tool to an agent with a permission level.
+
+    Args:
+        agent: The agent identifier.
+        tool_id: The tool identifier.
+        level: Permission level (read, write, admin).
+    """
     emit(asdict(runtime.api.access.grant(agent, tool_id, level)))
 
 
@@ -105,6 +112,12 @@ def bind(agent: str, tool_id: str, level: str) -> None:
 @click.argument("agent")
 @click.option("--tool", "tool_id", required=True)
 def unbind(agent: str, tool_id: str) -> None:
+    """Remove a tool binding from an agent.
+
+    Args:
+        agent: The agent identifier.
+        tool_id: The tool identifier.
+    """
     runtime.api.access.revoke(agent, tool_id)
     emit({"agent_id": agent, "tool_id": tool_id, "bound": False})
 
