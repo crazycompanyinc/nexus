@@ -31,8 +31,8 @@ def test_usage_metrics_after_call(hub):
 
 
 def test_latency_percentiles():
-    from nexus.metrics.metrics import UsageMetrics
-    stats = UsageMetrics._latency_stats([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+    from nexus.metrics._stats import latency_stats
+    stats = latency_stats([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
     assert stats["count"] == 10
     assert stats["min"] == 10
     assert stats["max"] == 100
@@ -42,8 +42,8 @@ def test_latency_percentiles():
 
 
 def test_latency_percentiles_empty():
-    from nexus.metrics.metrics import UsageMetrics
-    stats = UsageMetrics._latency_stats([])
+    from nexus.metrics._stats import latency_stats
+    stats = latency_stats([])
     assert stats["count"] == 0
     assert stats["avg"] == 0.0
 
