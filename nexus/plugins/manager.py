@@ -45,8 +45,27 @@ class PluginManager:
     def list_plugins(self) -> list[ToolPlugin]:
         return self.registry.metadata()
 
+    def list_plugins_by_status(self, status: str) -> list[ToolPlugin]:
+        """Filter plugins by lifecycle status.
+
+        Args:
+            status: PluginStatus value to filter by (e.g. 'active', 'error').
+
+        Returns:
+            List of ToolPlugin instances matching the given status.
+        """
+        return [p for p in self.registry.metadata() if p.status == status]
+
     def discover(self) -> dict[str, list[str]]:
         return self.registry.capabilities()
 
     def health(self) -> dict[str, Any]:
         return {plugin.metadata.id: plugin.health() for plugin in self.registry.list()}
+
+    def __repr__(self) -> str:
+        plugins = self.registry.metadata()
+        active = sum(1 for p in plugins if p.status == "active")
+        return (
+            f"PluginManager(plugins={len(plugins)}, active={active}, "
+            f"error={len(plugins) - active})"
+        )
