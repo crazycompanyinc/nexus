@@ -265,3 +265,31 @@ class Workflow:
             if step.max_retries < 0:
                 errors.append(f"Step {i}: max_retries cannot be negative")
         return errors
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dict with ISO 8601 timestamps.
+
+        Returns:
+            A dict representation suitable for JSON serialization.
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "steps": [
+                {
+                    "tool_id": s.tool_id,
+                    "action": s.action,
+                    "params": dict(s.params),
+                    "condition": s.condition,
+                    "fallback_tools": list(s.fallback_tools),
+                    "max_retries": s.max_retries,
+                    "retry_delay_ms": s.retry_delay_ms,
+                }
+                for s in self.steps
+            ],
+            "trigger": self.trigger,
+            "status": self.status,
+            "created_by": self.created_by,
+            "created_at": self.created_at.isoformat(),
+        }

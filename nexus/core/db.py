@@ -199,6 +199,18 @@ class NexusStore:
         """
         return agent_id in self.agents
 
+    def __iter__(self):
+        """Iterate over recorded tool calls in chronological order.
+
+        Returns:
+            An iterator over ToolCall instances.
+
+        Example:
+            >>> for call in store:
+            ...     print(call.action)
+        """
+        return iter(self.calls)
+
     def agent_call_count(self, agent_id: str) -> int:
         """Return the number of tool calls made by a specific agent.
 
