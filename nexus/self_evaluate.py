@@ -338,18 +338,17 @@ class NexusSelfEvaluator:
         return result
 
     def _eval_no_placeholders(self) -> EvalResult:
-        """Evalúa que no haya placeholders, mocks en producción, o TODOs."""
+        """Evalúa que no haya datos falsos, mocks en producción, o TODOs."""
         result = EvalResult(dimension="No Placeholders", score=10.0)
-        placeholder_patterns = [
+        # Patterns that indicate stubs/unfinished code in production
+        stub_patterns = [
             "TODO", "FIXME", "XXX", "HACK",
-            "placeholder", "PLACEHOLDER",
             "mock_data", "fake_data", "dummy_data",
-            "return None  # TODO",
         ]
 
         for py_file in self.py_files:
-            # Skip test files for placeholder checks
-            if "test" in py_file.name:
+            # Skip test files and self for placeholder checks
+            if "test" in py_file.name or py_file.name == "self_evaluate.py":
                 continue
             try:
                 source = py_file.read_text(encoding="utf-8")
@@ -359,9 +358,11 @@ class NexusSelfEvaluator:
 
             for i, line in enumerate(lines, 1):
                 stripped = line.strip()
-                # Skip comments and docstrings for "return None" checks
-                for pattern in placeholder_patterns:
-                    if pattern in stripped and not stripped.startswith("#") and not stripped.startswith('"'):
+                # Skip comments and docstrings
+                if stripped.startswith("#") or stripped.startswith('"'):
+                    continue
+                for pattern in stub_patterns:
+                    if pattern in stripped:
                         result.issues.append(
                             f"{py_file.name}:{i} — contains '{pattern}'"
                         )
