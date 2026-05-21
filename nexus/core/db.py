@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import asdict, is_dataclass
-from typing import Any
+from typing import Any, Iterator
 
 from nexus.core.models import AgentToolBinding, ToolCall, ToolPlugin, Workflow, WorkflowStep
 
