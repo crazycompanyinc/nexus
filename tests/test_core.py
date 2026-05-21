@@ -187,3 +187,51 @@ def test_store_export_empty():
     assert exported["agents"] == []
     assert exported["plugins"] == []
     assert exported["calls"] == []
+
+
+def test_agent_tool_binding_to_dict():
+    binding = AgentToolBinding("a1", "p1", "write", config={"timeout": 30})
+    d = binding.to_dict()
+    assert d["agent_id"] == "a1"
+    assert d["tool_id"] == "p1"
+    assert d["permissions"] == "write"
+    assert d["config"] == {"timeout": 30}
+    assert "bound_at" in d
+
+
+def test_workflow_to_dict():
+    wf = Workflow(
+        id="wf-1",
+        name="Test Flow",
+        description="A test workflow",
+        steps=[WorkflowStep(tool_id="p1", action="read", params={"x": 1})],
+        created_by="agent-1",
+    )
+    d = wf.to_dict()
+    assert d["id"] == "wf-1"
+    assert d["name"] == "Test Flow"
+    assert d["description"] == "A test workflow"
+    assert len(d["steps"]) == 1
+    assert d["steps"][0]["tool_id"] == "p1"
+    assert d["steps"][0]["action"] == "read"
+    assert d["steps"][0]["params"] == {"x": 1}
+    assert "created_at" in d
+
+
+def test_store_iter():
+    store = NexusStore()
+    c1 = store.record_call(ToolCall("a1", "p1", "read", {}))
+    c2 = store.record_call(ToolCall("a1", "p1", "write", {}))
+    calls = list(store)
+    assert len(calls) == 2
+    assert calls[0].action == "read"
+    assert calls[1].action == "write"
+
+
+def test_unified_api_repr():
+    from nexus.api.unified import UnifiedToolAPI
+    api = UnifiedToolAPI(max_retries=5, retry_base_delay=0.5)
+    r = repr(api)
+    assert "UnifiedToolAPI" in r
+    assert "max_retries=5" in r
+    assert "retry_base_delay=0.5" in r
