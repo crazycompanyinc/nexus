@@ -130,7 +130,6 @@ class UsageMetrics:
         if bucket not in valid_buckets:
             raise ValueError(f"bucket must be one of {sorted(valid_buckets)}, got {bucket!r}")
         calls = self._filter_calls(since=since, until=until)
-        from collections import defaultdict
 
         buckets: dict[str, dict[str, int]] = defaultdict(lambda: {"total": 0, "errors": 0})
         for call in calls:
