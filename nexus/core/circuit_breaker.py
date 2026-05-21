@@ -131,6 +131,8 @@ class CircuitBreaker:
         except self.expected_exception as exc:
             self._on_failure()
             raise
+
+    def _on_success(self) -> None:
         if self._state == CircuitState.HALF_OPEN.value:
             logger.info("Circuit breaker CLOSED — tool recovered")
             self._state = CircuitState.CLOSED.value
