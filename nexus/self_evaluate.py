@@ -7,7 +7,7 @@ Proporciona evaluación automatizada de la calidad del proyecto en 7 dimensiones
 2. Test Coverage — Existencia y cobertura de tests
 3. Documentation — README, SOUL.md, docstrings
 4. Error Handling — Try/catch, validación, mensajes claros
-5. No Placeholders — Sin datos falsos, mocks en producción
+5. No Stubs — Sin datos falsos, mocks en producción
 6. Rotatron Integration — Integración con continuación automática
 7. Status Reporting — Formato estandarizado de informes
 
