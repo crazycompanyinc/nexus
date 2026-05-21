@@ -199,7 +199,7 @@ class NexusStore:
         """
         return agent_id in self.agents
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[ToolCall]:
         """Iterate over recorded tool calls in chronological order.
 
         Returns:
