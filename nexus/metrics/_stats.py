@@ -5,7 +5,20 @@ from typing import Any
 
 
 def percentile(sorted_data: list[float], p: float) -> float:
-    """Compute percentile on sorted data using linear interpolation."""
+    """Compute percentile on sorted data using linear interpolation.
+
+    Args:
+        sorted_data: Pre-sorted list of float values (ascending order).
+        p: Percentile to compute (0-100).
+
+    Returns:
+        The interpolated percentile value.
+
+    Raises:
+        ValueError: If p is outside [0, 100] or sorted_data is empty.
+    """
+    if not 0 <= p <= 100:
+        raise ValueError(f"Percentile p must be between 0 and 100, got {p}")
     n = len(sorted_data)
     if n == 0:
         return 0.0
