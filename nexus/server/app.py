@@ -378,6 +378,90 @@ def create_app() -> FastAPI:
         from nexus.metrics.performance import PerformanceTracker
         return PerformanceTracker(store).by_tool()
 
+    @app.get("/agents/{agent_id}/calls")
+    async def agent_calls(
+        agent_id: str,
+        offset: int = Query(0, ge=0),
+        limit: int = Query(50, ge=1, le=200),
+        status: str | None = Query(None, description="Filter by call status: success, error, timeout, denied"),
+    ) -> dict[str, Any]:
+        """Get paginated tool calls for a specific agent, optionally filtered by status."""
+        if agent_id not in store.agents:
+            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+        calls = store.agent_calls(agent_id, status=status, limit=None)
+        total = len(calls)
+        paginated = calls[offset : offset + limit]
+        return {
+            "items": [
+                {
+                    "id": c.id,
+                    "tool_id": c.tool_id,
+                    "action": c.action,
+                    "status": c.status,
+                    "duration_ms": c.duration_ms,
+                    "called_at": c.called_at.isoformat(),
+                    "result": c.result,
+                }
+                for c in paginated
+            ],
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + limit < total,
+        }
+
+    @app.get("/workflows/{workflow_id}/runs")
+    async def workflow_runs(
+        workflow_id: str,
+        limit: int = Query(50, ge=1, le=200),
+    ) -> dict[str, Any]:
+        """Get run history for a specific workflow from audit events."""
+        if workflow_id not in store.workflows:
+            raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+        runs = [
+            e for e in store.audit_events
+            if e.get("type") == "workflow.ran" and e.get("workflow_id") == workflow_id
+        ]
+        return {
+            "items": runs[-limit:],
+            "total": len(runs),
+        }
+
+    @app.patch("/workflows/{workflow_id}")
+    async def patch_workflow(workflow_id: str, request: WorkflowRequest) -> dict[str, Any]:
+        """Partially update a workflow (PATCH semantics — all fields optional)."""
+        try:
+            from nexus.core.models import WorkflowStep
+            wf = store.workflows.get(workflow_id)
+            if wf is None:
+                raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+            if request.name is not None:
+                wf.name = request.name
+            if request.description is not None:
+                wf.description = request.description
+            if request.steps is not None:
+                wf.steps = [
+                    WorkflowStep(
+                        tool_id=s["tool_id"],
+                        action=s["action"],
+                        params=s.get("params", {}),
+                        condition=s.get("condition"),
+                        fallback_tools=s.get("fallback_tools", []),
+                        max_retries=s.get("max_retries", 0),
+                        retry_delay_ms=s.get("retry_delay_ms", 100.0),
+                    )
+                    for s in request.steps
+                ]
+            errors = wf.validate()
+            if errors:
+                raise HTTPException(status_code=400, detail=f"Validation failed: {'; '.join(errors)}")
+            store.audit("workflow.patched", workflow_id=workflow_id)
+            return wf.to_dict()
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/health")
     async def health() -> dict[str, Any]:
         return manager.health()
