@@ -4,6 +4,7 @@ from typing import Any
 
 from nexus.core.db import NexusStore
 from nexus.core.models import ToolPlugin
+from nexus.core.circuit_breaker import CircuitBreaker, CircuitState
 from nexus.plugins.loader import PluginLoader
 from nexus.plugins.registry import PluginRegistry
 from nexus.plugins.sdk import Plugin, registered_plugins
@@ -15,6 +16,10 @@ class PluginManager:
     Coordinates between the plugin registry (metadata), loader (discovery),
     and store (persistence) to provide a unified plugin management surface.
 
+    Each plugin can optionally have a ``CircuitBreaker`` to prevent cascading
+    failures when a tool is unresponsive. When a circuit breaker is configured,
+    calls made through ``call()`` are guarded by the breaker.
+
     Example:
         >>> manager = PluginManager()
         >>> manager.install_all_builtins()
@@ -22,16 +27,68 @@ class PluginManager:
         11
     """
 
-    def __init__(self, store: NexusStore | None = None, registry: PluginRegistry | None = None) -> None:
+    def __init__(
+        self,
+        store: NexusStore | None = None,
+        registry: PluginRegistry | None = None,
+        default_circuit_breaker: bool = False,
+    ) -> None:
         """Initialize the PluginManager.
 
         Args:
             store: NexusStore instance for persistence. Creates default if None.
             registry: PluginRegistry instance. Creates default if None.
+            default_circuit_breaker: If True, auto-create a CircuitBreaker for
+                each plugin registered via ``register()``.
         """
         self.store = store or NexusStore()
         self.registry = registry or PluginRegistry()
         self.loader = PluginLoader()
+        self._breakers: dict[str, CircuitBreaker] = {}
+        self._default_breakers = default_circuit_breaker
+
+    def set_circuit_breaker(self, plugin_id: str, breaker: CircuitBreaker) -> None:
+        """Attach a circuit breaker to a specific plugin.
+
+        Args:
+            plugin_id: The plugin identifier.
+            breaker: The CircuitBreaker instance to use for that plugin.
+
+        Raises:
+            KeyError: If the plugin is not registered.
+        """
+        if not self.registry.get(plugin_id):
+            raise KeyError(f"Plugin not registered: {plugin_id}")
+        self._breakers[plugin_id] = breaker
+
+    def get_circuit_breaker(self, plugin_id: str) -> CircuitBreaker | None:
+        """Return the circuit breaker for a plugin, if any."""
+        return self._breakers.get(plugin_id)
+
+    def call(self, plugin_id: str, action: str, params: dict[str, Any]) -> Any:
+        """Execute a plugin action, optionally guarded by a circuit breaker.
+
+        If a circuit breaker is set for the plugin, the call is routed through
+        it. When the circuit is open, a RuntimeError is raised immediately
+        without calling the plugin.
+
+        Args:
+            plugin_id: The plugin identifier.
+            action: The action name to execute.
+            params: Parameters dict passed to the plugin action.
+
+        Returns:
+            The result from the plugin execution.
+
+        Raises:
+            KeyError: If the plugin is not registered.
+            RuntimeError: If the circuit breaker is open.
+        """
+        plugin = self.get(plugin_id)
+        breaker = self._breakers.get(plugin_id)
+        if breaker:
+            return breaker.call(plugin.execute, action, params)
+        return plugin.execute(action, params)
 
     def register(self, plugin: Plugin) -> ToolPlugin:
         """Register a plugin, persisting its metadata and recording an audit event.
