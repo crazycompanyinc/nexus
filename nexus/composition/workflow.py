@@ -252,7 +252,9 @@ class Pipeline:
             List of StepResult instances, one per executed step.
         """
         from time import perf_counter, sleep
-        workflow = self.store.workflows[workflow_id]
+        workflow = self.store.get_workflow(workflow_id)
+        if workflow is None:
+            raise KeyError(f"Workflow not found: {workflow_id}")
         results: list[StepResult] = []
         run_started = perf_counter()
         for idx, step in enumerate(workflow.steps):
