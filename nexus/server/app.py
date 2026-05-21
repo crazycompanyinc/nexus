@@ -442,11 +442,13 @@ def create_app() -> FastAPI:
             wf = store.workflows.get(workflow_id)
             if wf is None:
                 raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
-            if request.name is not None:
+            if request.name is not None and request.name:
                 wf.name = request.name
-            if request.description is not None:
+            if request.description is not None and request.description:
                 wf.description = request.description
-            if request.steps is not None:
+            if request.created_by is not None and request.created_by:
+                wf.created_by = request.created_by
+            if request.steps:
                 wf.steps = [
                     WorkflowStep(
                         tool_id=s["tool_id"],
