@@ -204,6 +204,18 @@ class StepResult:
         status = "ok" if self.success else "FAIL"
         return f"StepResult(#{self.step_index}, {self.tool_id}.{self.action}, {status}, {self.duration_ms:.1f}ms)"
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dict."""
+        return {
+            "step_index": self.step_index,
+            "tool_id": self.tool_id,
+            "action": self.action,
+            "result": self.result,
+            "error": self.error,
+            "duration_ms": self.duration_ms,
+            "success": self.success,
+        }
+
 
 class Pipeline:
     """Executes workflows by running each step through the UnifiedToolAPI.
