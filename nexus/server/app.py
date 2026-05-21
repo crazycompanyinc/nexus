@@ -112,6 +112,13 @@ class WorkflowRequest(BaseModel):
     description: str = ""
 
 
+class WorkflowPatchRequest(BaseModel):
+    name: str | None = None
+    steps: list[dict[str, Any]] | None = None
+    created_by: str | None = None
+    description: str | None = None
+
+
 def create_app() -> FastAPI:
     store = NexusStore()
     manager = PluginManager(store)
@@ -428,7 +435,7 @@ def create_app() -> FastAPI:
         }
 
     @app.patch("/workflows/{workflow_id}")
-    async def patch_workflow(workflow_id: str, request: WorkflowRequest) -> dict[str, Any]:
+    async def patch_workflow(workflow_id: str, request: WorkflowPatchRequest) -> dict[str, Any]:
         """Partially update a workflow (PATCH semantics — all fields optional)."""
         try:
             from nexus.core.models import WorkflowStep
