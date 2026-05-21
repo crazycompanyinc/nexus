@@ -74,6 +74,20 @@ class CallRequest(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
     fallback_tools: list[str] = Field(default_factory=list)
 
+    @field_validator("agent_id")
+    @classmethod
+    def validate_agent_id(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("agent_id must be a non-empty string")
+        return v.strip()
+
+    @field_validator("action")
+    @classmethod
+    def validate_action(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("action must be a non-empty string")
+        return v.strip()
+
 
 class BindingRequest(BaseModel):
     agent_id: str
