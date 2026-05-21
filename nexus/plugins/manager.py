@@ -128,9 +128,19 @@ class PluginManager:
         return [p for p in self.registry.metadata() if p.status == status]
 
     def discover(self) -> dict[str, list[str]]:
+        """Discover all available capabilities grouped by plugin.
+
+        Returns:
+            Dict mapping plugin IDs to their list of capability strings.
+        """
         return self.registry.capabilities()
 
     def health(self) -> dict[str, Any]:
+        """Check health status of all registered plugins.
+
+        Returns:
+            Dict mapping plugin IDs to their health check results.
+        """
         return {plugin.metadata.id: plugin.health() for plugin in self.registry.list()}
 
     def unregister(self, plugin_id: str) -> bool:

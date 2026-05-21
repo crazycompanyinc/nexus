@@ -181,6 +181,9 @@ class WorkflowBuilder:
             return True
         return False
 
+    def __repr__(self) -> str:
+        return f"WorkflowBuilder(workflows={len(self.store.workflows)})"
+
 
 @dataclass(slots=True)
 class StepResult:
