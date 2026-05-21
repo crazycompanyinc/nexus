@@ -61,3 +61,9 @@ class AccessControl:
     def is_admin(self, agent_id: str, tool_id: str) -> bool:
         binding = self.store.get_binding(agent_id, tool_id)
         return bool(binding and binding.permissions == PermissionLevel.ADMIN.value)
+
+    def __repr__(self) -> str:
+        return (
+            f"AccessControl(agents={len(self.store.agents)}, "
+            f"bindings={len(self.store.bindings)})"
+        )
