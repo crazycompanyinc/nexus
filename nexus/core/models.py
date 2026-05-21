@@ -152,6 +152,20 @@ class AgentToolBinding:
     def __repr__(self) -> str:
         return f"AgentToolBinding(agent={self.agent_id!r}, tool={self.tool_id!r}, perm={self.permissions!r})"
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dict with ISO 8601 timestamps.
+
+        Returns:
+            A dict representation suitable for JSON serialization.
+        """
+        return {
+            "agent_id": self.agent_id,
+            "tool_id": self.tool_id,
+            "permissions": self.permissions,
+            "config": dict(self.config),
+            "bound_at": self.bound_at.isoformat(),
+        }
+
 
 @dataclass(slots=True)
 class ToolCall:
