@@ -37,3 +37,9 @@ class PermissionModel:
 
     def allows(self, granted: str, required: str) -> bool:
         return self.ORDER[granted] >= self.ORDER[required]
+
+    def __repr__(self) -> str:
+        return (
+            f"PermissionModel(levels={len(self.ORDER)}, "
+            f"actions={len(self.ACTION_REQUIREMENTS)})"
+        )
