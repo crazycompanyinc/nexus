@@ -375,6 +375,10 @@ class NexusStore:
     def _to_dict(value: Any) -> Any:
         """Convert a dataclass instance to a dict, or return as-is.
 
+        Prefers the model's own ``to_dict()`` method when available
+        (handles datetime serialization correctly), falling back to
+        ``dataclasses.asdict()`` for other dataclasses.
+
         Args:
             value: The value to convert.
 
@@ -382,5 +386,7 @@ class NexusStore:
             A dict if the value is a dataclass, otherwise the original value.
         """
         if is_dataclass(value):
+            if hasattr(value, "to_dict"):
+                return value.to_dict()
             return asdict(value)
         return value
