@@ -11,6 +11,8 @@ from nexus.core.models import Workflow, WorkflowStep
 
 logger = logging.getLogger(__name__)
 
+__all__ = ["Pipeline", "StepResult", "Workflow", "WorkflowBuilder", "WorkflowStep"]
+
 
 class WorkflowBuilder:
     """Creates, updates, and manages workflow definitions.
