@@ -104,7 +104,7 @@ class WorkflowBuilder:
         Returns:
             The Workflow if found, None otherwise.
         """
-        return self.store.workflows.get(workflow_id)
+        return self.store.get_workflow(workflow_id)
 
     def update(
         self,
