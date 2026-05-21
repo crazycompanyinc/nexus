@@ -94,7 +94,43 @@ class CircuitBreaker:
             self._on_failure()
             raise
 
-    def _on_success(self) -> None:
+    async def acall(self, fn: Callable[..., Coroutine[Any, Any, T]], *args: Any, **kwargs: Any) -> T:
+        """Execute an async function through the circuit breaker.
+
+        Works identically to ``call()`` but for async functions / coroutines.
+
+        Args:
+            fn: The async function to call (must return a coroutine).
+            *args: Positional arguments for the function.
+            **kwargs: Keyword arguments for the function.
+
+        Returns:
+            The result of the function call.
+
+        Raises:
+            RuntimeError: If the circuit is open.
+            Exception: Any exception raised by the function.
+
+        Example:
+            >>> cb = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
+            >>> result = await cb.acall(async_plugin.execute, "read", {"path": "/tmp/file"})
+        """
+        current_state = self.state
+
+        if current_state == CircuitState.OPEN:
+            raise RuntimeError(
+                f"Circuit breaker is OPEN — tool temporarily disabled. "
+                f"Retry after {self.recovery_timeout}s. "
+                f"Consecutive failures: {self._failure_count}"
+            )
+
+        try:
+            result = await fn(*args, **kwargs)
+            self._on_success()
+            return result
+        except self.expected_exception as exc:
+            self._on_failure()
+            raise
         if self._state == CircuitState.HALF_OPEN.value:
             logger.info("Circuit breaker CLOSED — tool recovered")
             self._state = CircuitState.CLOSED.value
