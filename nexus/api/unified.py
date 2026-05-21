@@ -50,6 +50,15 @@ class UnifiedToolAPI:
         self.max_retries = max(max_retries, 0)
         self.retry_base_delay = max(retry_base_delay, 0.0)
 
+    def __repr__(self) -> str:
+        return (
+            f"UnifiedToolAPI(agents={len(self.store.agents)}, "
+            f"plugins={len(self.store.plugins)}, "
+            f"calls={len(self.store.calls)}, "
+            f"max_retries={self.max_retries}, "
+            f"retry_base_delay={self.retry_base_delay}s)"
+        )
+
     def call(
         self,
         agent_id: str,
