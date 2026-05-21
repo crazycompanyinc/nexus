@@ -302,6 +302,11 @@ class NexusStore:
     def import_(self, data: dict[str, Any]) -> None:
         """Import store state from an exported dict. Replaces all current data.
 
+        Parses ISO 8601 datetime strings back to ``datetime`` objects for
+        ``ToolPlugin``, ``AgentToolBinding``, ``ToolCall``, and ``Workflow``
+        entries so that round-tripping through ``export()`` / ``import_()``
+        preserves full type fidelity.
+
         Args:
             data: Dict produced by export().
 
@@ -321,21 +326,43 @@ class NexusStore:
                 raise ValueError(f"Invalid agent_id in import data: {agent_id!r}")
             self.agents.add(agent_id.strip())
         for plugin_dict in data.get("plugins", []):
-            plugin = ToolPlugin(**plugin_dict)
+            plugin = self._parse_dataclass(ToolPlugin, plugin_dict)
             self.plugins[plugin.id] = plugin
         for binding_dict in data.get("bindings", []):
-            binding = AgentToolBinding(**binding_dict)
+            binding = self._parse_dataclass(AgentToolBinding, binding_dict)
             self.bindings[(binding.agent_id, binding.tool_id)] = binding
         for call_dict in data.get("calls", []):
-            call = ToolCall(**call_dict)
+            call = self._parse_dataclass(ToolCall, call_dict)
             self.calls.append(call)
         for wf_dict in data.get("workflows", []):
             wf_data = dict(wf_dict)
             steps = [WorkflowStep(**s) for s in wf_data.pop("steps", [])]
-            workflow = Workflow(**wf_data, steps=steps)
+            workflow = self._parse_dataclass(Workflow, wf_data, extra={"steps": steps})
             self.workflows[workflow.id] = workflow
         for event in data.get("audit_events", []):
             self.audit_events.append(event)
+
+    @staticmethod
+    def _parse_dataclass(cls: type, data: dict[str, Any], extra: dict[str, Any] | None = None) -> Any:
+        """Parse a dict into a dataclass, converting ISO datetime strings.
+
+        Args:
+            cls: The dataclass type to construct.
+            data: The dict with string values (possibly ISO datetimes).
+            extra: Additional keyword arguments to pass to the constructor.
+
+        Returns:
+            An instance of the dataclass with proper datetime fields.
+        """
+        from datetime import datetime
+        parsed = dict(data)
+        # Convert known datetime fields
+        for field_name in ("registered_at", "bound_at", "called_at", "created_at"):
+            if field_name in parsed and isinstance(parsed[field_name], str):
+                parsed[field_name] = datetime.fromisoformat(parsed[field_name])
+        if extra:
+            parsed.update(extra)
+        return cls(**parsed)
 
     def recent_calls(self, n: int = 10) -> list[ToolCall]:
         """Return the most recent tool calls.
