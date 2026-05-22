@@ -192,7 +192,7 @@ def create_app() -> FastAPI:
     async def init() -> dict[str, Any]:
         return {"plugins": [plugin.id for plugin in manager.install_all_builtins()]}
 
-    @app.get("/plugins")
+    @app.get("/plugins", tags=["Plugins"])
     async def plugins(
         offset: int = Query(0, ge=0),
         limit: int = Query(50, ge=1, le=200),
@@ -207,7 +207,7 @@ def create_app() -> FastAPI:
             "has_more": offset + limit < len(all_plugins),
         }
 
-    @app.get("/plugins/{plugin_id}")
+    @app.get("/plugins/{plugin_id}", tags=["Plugins"])
     async def get_plugin(plugin_id: str) -> dict[str, Any]:
         """Get a single plugin by its ID."""
         try:
@@ -216,22 +216,22 @@ def create_app() -> FastAPI:
         except KeyError:
             raise HTTPException(status_code=404, detail=f"Plugin {plugin_id} not found")
 
-    @app.delete("/plugins/{plugin_id}")
+    @app.delete("/plugins/{plugin_id}", tags=["Plugins"])
     async def delete_plugin(plugin_id: str) -> dict[str, Any]:
         """Unregister a plugin by its ID."""
         if manager.unregister(plugin_id):
             return {"unregistered": True, "plugin_id": plugin_id}
         raise HTTPException(status_code=404, detail=f"Plugin {plugin_id} not found")
 
-    @app.get("/discover")
+    @app.get("/discover", tags=["Discovery"])
     async def discover() -> list[dict[str, object]]:
         return ToolDiscovery(manager).available_tools()
 
-    @app.post("/bindings")
+    @app.post("/bindings", tags=["Bindings"])
     async def bind(request: BindingRequest) -> dict[str, Any]:
         return asdict(api.access.grant(request.agent_id, request.tool_id, request.level))
 
-    @app.post("/tools/{tool_id}/call")
+    @app.post("/tools/{tool_id}/call", tags=["Tools"])
     async def call(tool_id: str, request: CallRequest) -> dict[str, Any]:
         try:
             result = api.call(request.agent_id, tool_id, request.action, request.params, request.fallback_tools)
@@ -241,7 +241,7 @@ def create_app() -> FastAPI:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    @app.post("/tools/batch")
+    @app.post("/tools/batch", tags=["Tools"])
     async def batch_call(requests: list[CallRequest]) -> dict[str, Any]:
         """Execute multiple tool calls in sequence."""
         results = []
@@ -254,11 +254,11 @@ def create_app() -> FastAPI:
         succeeded = sum(1 for r in results if r["success"])
         return {"results": results, "succeeded": succeeded, "failed": len(results) - succeeded}
 
-    @app.post("/workflows")
+    @app.post("/workflows", tags=["Workflows"])
     async def create_workflow(request: WorkflowRequest) -> dict[str, Any]:
         return asdict(workflows.create(request.name, request.steps, request.created_by, request.description))
 
-    @app.post("/workflows/{workflow_id}/run")
+    @app.post("/workflows/{workflow_id}/run", tags=["Workflows"])
     async def run_workflow(workflow_id: str, agent_id: str, fail_fast: bool = False) -> dict[str, Any]:
         step_results = pipeline.run(workflow_id, agent_id, fail_fast=fail_fast)
         return {
@@ -278,13 +278,13 @@ def create_app() -> FastAPI:
             "failed": sum(1 for r in step_results if not r.success),
         }
 
-    @app.delete("/workflows/{workflow_id}")
+    @app.delete("/workflows/{workflow_id}", tags=["Workflows"])
     async def delete_workflow(workflow_id: str) -> dict[str, Any]:
         if not store.delete_workflow(workflow_id):
             raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
         return {"deleted": True, "workflow_id": workflow_id}
 
-    @app.get("/workflows")
+    @app.get("/workflows", tags=["Workflows"])
     async def list_workflows(
         offset: int = Query(0, ge=0),
         limit: int = Query(50, ge=1, le=200),
@@ -299,14 +299,14 @@ def create_app() -> FastAPI:
             "has_more": offset + limit < len(all_wf),
         }
 
-    @app.get("/workflows/{workflow_id}")
+    @app.get("/workflows/{workflow_id}", tags=["Workflows"])
     async def get_workflow(workflow_id: str) -> dict[str, Any]:
         wf = workflows.get(workflow_id)
         if wf is None:
             raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
         return asdict(wf)
 
-    @app.put("/workflows/{workflow_id}")
+    @app.put("/workflows/{workflow_id}", tags=["Workflows"])
     async def update_workflow(workflow_id: str, request: WorkflowRequest) -> dict[str, Any]:
         try:
             updated = workflows.update(
