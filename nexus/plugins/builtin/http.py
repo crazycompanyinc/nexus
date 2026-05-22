@@ -16,6 +16,20 @@ class HTTPPlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute an HTTP request action.
+
+        Supports request.get, request.post, request.put, request.delete.
+
+        Args:
+            action: The HTTP action in 'request.VERB' format.
+            params: Parameters including 'url' and optional 'json' body.
+
+        Returns:
+            Dict with method, url, status_code, and json response.
+
+        Raises:
+            ValueError: If the action is not a supported HTTP method.
+        """
         if action.startswith("request."):
             return {
                 "method": action.split(".", 1)[1].upper(),

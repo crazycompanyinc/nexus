@@ -19,6 +19,20 @@ class GitHubPlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute a GitHub API action.
+
+        Supports: repos.list, prs.list, issues.list, ci.status, prs.create.
+
+        Args:
+            action: The GitHub action to perform.
+            params: Action-specific parameters (e.g. 'sha', 'title').
+
+        Returns:
+            Dict or list with the action result data.
+
+        Raises:
+            ValueError: If the action is not supported.
+        """
         if action == "repos.list":
             return [{"name": "nexus", "private": False}, {"name": "agent-lab", "private": True}]
         if action == "prs.list":

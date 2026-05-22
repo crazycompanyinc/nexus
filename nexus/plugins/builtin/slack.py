@@ -19,6 +19,20 @@ class SlackPlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute a Slack API action.
+
+        Supports: messages.send, channels.list, reactions.add.
+
+        Args:
+            action: The Slack action to perform.
+            params: Action-specific parameters (e.g. 'channel', 'text', 'reaction').
+
+        Returns:
+            Dict with the action result data.
+
+        Raises:
+            ValueError: If the action is not supported.
+        """
         if action == "messages.send":
             return {"sent": True, "channel": params.get("channel", "#general"), "text": params.get("text", "")}
         if action == "channels.list":

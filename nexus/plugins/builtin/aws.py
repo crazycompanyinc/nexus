@@ -18,6 +18,20 @@ class AWSPlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute an AWS service action.
+
+        Supports: ec2.list, s3.list, lambda.invoke, cloudwatch.metrics.
+
+        Args:
+            action: The AWS service action to perform.
+            params: Action-specific parameters.
+
+        Returns:
+            Dict or list with the action result data.
+
+        Raises:
+            ValueError: If the action is not supported.
+        """
         if action == "ec2.list":
             return [{"id": "i-123", "state": "running"}]
         if action == "s3.list":
