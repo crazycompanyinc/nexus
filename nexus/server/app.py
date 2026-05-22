@@ -296,10 +296,28 @@ def create_app() -> FastAPI:
 
     @app.post("/workflows", tags=["Workflows"])
     async def create_workflow(request: WorkflowRequest) -> dict[str, Any]:
+        """Create a new multi-step workflow.
+
+        Args:
+            request: Workflow definition with name, steps, and creator.
+
+        Returns:
+            A dict representation of the created Workflow.
+        """
         return asdict(workflows.create(request.name, request.steps, request.created_by, request.description))
 
     @app.post("/workflows/{workflow_id}/run", tags=["Workflows"])
     async def run_workflow(workflow_id: str, agent_id: str, fail_fast: bool = False) -> dict[str, Any]:
+        """Execute a workflow by its ID on behalf of an agent.
+
+        Args:
+            workflow_id: The workflow to execute.
+            agent_id: The agent running the workflow.
+            fail_fast: If True, stop on first step failure.
+
+        Returns:
+            A dict with per-step results, succeeded count, and failed count.
+        """
         step_results = pipeline.run(workflow_id, agent_id, fail_fast=fail_fast)
         return {
             "results": [
@@ -320,6 +338,17 @@ def create_app() -> FastAPI:
 
     @app.delete("/workflows/{workflow_id}", tags=["Workflows"])
     async def delete_workflow(workflow_id: str) -> dict[str, Any]:
+        """Delete a workflow by its ID.
+
+        Args:
+            workflow_id: The workflow to delete.
+
+        Returns:
+            A dict confirming deletion.
+
+        Raises:
+            HTTPException: 404 if the workflow does not exist.
+        """
         if not store.delete_workflow(workflow_id):
             raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
         return {"deleted": True, "workflow_id": workflow_id}
@@ -329,6 +358,15 @@ def create_app() -> FastAPI:
         offset: int = Query(0, ge=0),
         limit: int = Query(50, ge=1, le=200),
     ) -> dict[str, Any]:
+        """List all workflows with pagination support.
+
+        Args:
+            offset: Number of items to skip.
+            limit: Maximum number of items to return.
+
+        Returns:
+            A paginated response with workflow items.
+        """
         all_wf = workflows.list()
         items = [asdict(wf) for wf in all_wf[offset : offset + limit]]
         return {
@@ -341,6 +379,17 @@ def create_app() -> FastAPI:
 
     @app.get("/workflows/{workflow_id}", tags=["Workflows"])
     async def get_workflow(workflow_id: str) -> dict[str, Any]:
+        """Get a single workflow by its ID.
+
+        Args:
+            workflow_id: The workflow to retrieve.
+
+        Returns:
+            A dict representation of the workflow.
+
+        Raises:
+            HTTPException: 404 if the workflow does not exist.
+        """
         wf = workflows.get(workflow_id)
         if wf is None:
             raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
@@ -348,6 +397,18 @@ def create_app() -> FastAPI:
 
     @app.put("/workflows/{workflow_id}", tags=["Workflows"])
     async def update_workflow(workflow_id: str, request: WorkflowRequest) -> dict[str, Any]:
+        """Fully update a workflow (PUT semantics — all fields required).
+
+        Args:
+            workflow_id: The workflow to update.
+            request: New workflow definition.
+
+        Returns:
+            A dict representation of the updated workflow.
+
+        Raises:
+            HTTPException: 404 if the workflow does not exist.
+        """
         try:
             updated = workflows.update(
                 workflow_id,
