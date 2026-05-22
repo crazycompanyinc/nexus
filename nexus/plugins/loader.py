@@ -23,6 +23,11 @@ class PluginLoader:
     ]
 
     def load_builtins(self) -> list[Plugin]:
+        """Load all built-in plugins from the predefined BUILTIN_MODULES list.
+
+        Returns:
+            List of Plugin instances discovered across all built-in modules.
+        """
         plugins: list[Plugin] = []
         for module_name in self.BUILTIN_MODULES:
             module = importlib.import_module(module_name)
@@ -30,10 +35,27 @@ class PluginLoader:
         return plugins
 
     def load_module(self, module_name: str) -> list[Plugin]:
+        """Load plugins from a single Python module by name.
+
+        Args:
+            module_name: Fully qualified module name to import.
+
+        Returns:
+            List of Plugin instances found in the module.
+        """
         module = importlib.import_module(module_name)
         return self._plugins_from_module(module)
 
     def load_directory(self, directory: str | Path, *, recursive: bool = True) -> list[Plugin]:
+        """Load plugins from all Python files in a directory.
+
+        Args:
+            directory: Path to the directory to scan for plugin files.
+            recursive: If True, scan subdirectories recursively.
+
+        Returns:
+            List of Plugin instances discovered across all files.
+        """
         directory = Path(directory)
         plugins: list[Plugin] = []
         pattern = "**/*.py" if recursive else "*.py"

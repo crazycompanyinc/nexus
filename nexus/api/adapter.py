@@ -26,6 +26,14 @@ class ToolAdapter:
             A callable that accepts keyword params and returns the tool result.
         """
         def tool(**params: Any) -> Any:
+            """Execute a Nexus tool call with the configured agent, tool, and action.
+
+            Args:
+                **params: Keyword arguments forwarded as tool parameters.
+
+            Returns:
+                The result returned by the Nexus UnifiedToolAPI.
+            """
             return self.api.call(agent_id, tool_id, action, params)
 
         tool.__name__ = f"nexus_{tool_id}_{action.replace('.', '_')}"
