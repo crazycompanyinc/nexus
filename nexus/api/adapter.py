@@ -12,6 +12,11 @@ class ToolAdapter:
     """
 
     def __init__(self, api: UnifiedToolAPI) -> None:
+        """Initialize the adapter with a UnifiedToolAPI instance.
+
+        Args:
+            api: The Nexus UnifiedToolAPI to wrap.
+        """
         self.api = api
 
     def as_langchain_tool(self, agent_id: str, tool_id: str, action: str) -> Callable[..., Any]:
@@ -61,6 +66,11 @@ class APIMapper:
     """Maps Nexus API capabilities to external framework formats."""
 
     def __init__(self, api: UnifiedToolAPI) -> None:
+        """Initialize the mapper with a UnifiedToolAPI instance.
+
+        Args:
+            api: The Nexus UnifiedToolAPI to wrap.
+        """
         self.api = api
 
     def map_capabilities(self) -> dict[str, list[str]]:

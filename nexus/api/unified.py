@@ -112,6 +112,24 @@ class UnifiedToolAPI:
         )
 
     def _call_one(self, agent_id: str, tool_id: str, action: str, params: dict[str, Any]) -> Any:
+        """Execute a single tool call with permission checking, timing, and error classification.
+
+        Records the call outcome to the store regardless of success or failure.
+
+        Args:
+            agent_id: The agent making the call.
+            tool_id: The target tool plugin identifier.
+            action: The action to invoke.
+            params: Key-value parameters for the action.
+
+        Returns:
+            The result returned by the tool plugin.
+
+        Raises:
+            PermissionError: If the agent lacks access for the requested action.
+            TimeoutError: If the tool execution exceeds the timeout.
+            Exception: Any exception raised by the tool plugin execution.
+        """
         started = perf_counter()
         call = ToolCall(agent_id=agent_id, tool_id=tool_id, action=action, params=params)
         try:
