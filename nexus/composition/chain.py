@@ -13,6 +13,12 @@ class ToolChain:
     """
 
     def __init__(self, api: UnifiedToolAPI, agent_id: str) -> None:
+        """Initialize the chain with a UnifiedToolAPI and agent ID.
+
+        Args:
+            api: The tool API to use for executing steps.
+            agent_id: The agent ID to use for all calls in the chain.
+        """
         self.api = api
         self.agent_id = agent_id
         self.steps: list[tuple[str, str, dict[str, Any], list[str]]] = []

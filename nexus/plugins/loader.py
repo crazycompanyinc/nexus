@@ -9,6 +9,8 @@ from nexus.plugins.sdk import BasePlugin, Plugin
 
 
 class PluginLoader:
+    """Discovers and loads Nexus plugins from modules, directories, and built-ins."""
+
     BUILTIN_MODULES = [
         "nexus.plugins.builtin.github",
         "nexus.plugins.builtin.slack",

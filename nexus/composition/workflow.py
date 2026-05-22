@@ -196,6 +196,17 @@ class WorkflowBuilder:
 
 @dataclass(slots=True)
 class StepResult:
+    """Result of a single workflow step execution.
+
+    Attributes:
+        step_index: Zero-based position of the step in the workflow.
+        tool_id: The tool plugin that was invoked.
+        action: The action that was executed.
+        result: The return value from the tool, None on failure.
+        error: Error message string if the step failed, None otherwise.
+        duration_ms: Wall-clock execution time in milliseconds.
+        success: Whether the step completed without error.
+    """
     step_index: int
     tool_id: str
     action: str
