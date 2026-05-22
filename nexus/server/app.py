@@ -21,8 +21,11 @@ from nexus.plugins.manager import PluginManager
 class RateLimitMiddleware:
     """Simple in-memory sliding window rate limiter.
 
-    Limits each client IP to `max_requests` per `window_seconds`.
-    Returns HTTP 429 with Retry-After header when limit is exceeded.
+    Limits each client IP to ``max_requests`` per ``window_seconds``.
+    Returns HTTP 429 with ``Retry-After`` header when limit is exceeded.
+
+    Stale IP entries are purged on every check to prevent unbounded
+    memory growth in long-running processes.
     """
 
     def __init__(self, max_requests: int = 120, window_seconds: int = 60) -> None:
@@ -37,8 +40,13 @@ class RateLimitMiddleware:
         window_start = now - self.window_seconds
 
         timestamps = self._requests.setdefault(client, [])
-        # Purge old entries
+        # Purge old entries for this client
         timestamps[:] = [t for t in timestamps if t > window_start]
+
+        # Global cleanup: remove IPs whose entire window has expired
+        stale_ips = [ip for ip, ts in self._requests.items() if ip != client and ts and ts[-1] <= window_start]
+        for ip in stale_ips:
+            del self._requests[ip]
 
         if len(timestamps) >= self.max_requests:
             retry_after = int(timestamps[0] + self.window_seconds - now) + 1
