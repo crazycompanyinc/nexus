@@ -178,6 +178,7 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(PermissionError)
     async def permission_error_handler(request: Request, exc: PermissionError) -> JSONResponse:
+        """Handle PermissionError exceptions, returning a structured 403 JSON response."""
         return JSONResponse(
             status_code=403,
             content=ErrorResponse(error="permission_denied", detail=str(exc), code="FORBIDDEN").model_dump(),
@@ -199,6 +200,11 @@ def create_app() -> FastAPI:
 
     @app.post("/init")
     async def init() -> dict[str, Any]:
+        """Initialize Nexus by installing all built-in plugins.
+
+        Returns:
+            A dict with the list of installed plugin IDs.
+        """
         return {"plugins": [plugin.id for plugin in manager.install_all_builtins()]}
 
     @app.get("/plugins", tags=["Plugins"])
@@ -234,14 +240,39 @@ def create_app() -> FastAPI:
 
     @app.get("/discover", tags=["Discovery"])
     async def discover() -> list[dict[str, object]]:
+        """Discover all available tools from registered plugins.
+
+        Returns:
+            A list of tool descriptors with their capabilities.
+        """
         return ToolDiscovery(manager).available_tools()
 
     @app.post("/bindings", tags=["Bindings"])
     async def bind(request: BindingRequest) -> dict[str, Any]:
+        """Create a binding between an agent and a tool with a permission level.
+
+        Args:
+            request: Binding request containing agent_id, tool_id, and level.
+
+        Returns:
+            A dict representation of the created AgentToolBinding.
+        """
         return asdict(api.access.grant(request.agent_id, request.tool_id, request.level))
 
     @app.post("/tools/{tool_id}/call", tags=["Tools"])
     async def call(tool_id: str, request: CallRequest) -> dict[str, Any]:
+        """Execute a single tool call on behalf of an agent.
+
+        Args:
+            tool_id: The tool to invoke.
+            request: Call parameters including agent_id, action, and params.
+
+        Returns:
+            A dict with the tool execution result.
+
+        Raises:
+            HTTPException: 403 if permission denied, 400 on execution error.
+        """
         try:
             result = api.call(request.agent_id, tool_id, request.action, request.params, request.fallback_tools)
             return {"result": result}
