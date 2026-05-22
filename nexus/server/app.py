@@ -319,20 +319,20 @@ def create_app() -> FastAPI:
         except KeyError:
             raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
 
-    @app.get("/agents/{agent_id}/permissions")
+    @app.get("/agents/{agent_id}/permissions", tags=["Agents"])
     async def agent_permissions(agent_id: str) -> list[dict[str, Any]]:
         return [asdict(b) for b in api.access.list_agent_permissions(agent_id)]
 
-    @app.get("/audit")
+    @app.get("/audit", tags=["Audit"])
     async def audit_trail(limit: int = 50) -> list[dict[str, Any]]:
         return store.audit_events[-limit:]
 
-    @app.delete("/bindings/{agent_id}/{tool_id}")
+    @app.delete("/bindings/{agent_id}/{tool_id}", tags=["Bindings"])
     async def unbind(agent_id: str, tool_id: str) -> dict[str, Any]:
         api.access.revoke(agent_id, tool_id)
         return {"revoked": True, "agent_id": agent_id, "tool_id": tool_id}
 
-    @app.get("/agents")
+    @app.get("/agents", tags=["Agents"])
     async def list_agents() -> dict[str, Any]:
         """List all registered agents with their binding counts."""
         agents = sorted(store.agents)
@@ -349,14 +349,14 @@ def create_app() -> FastAPI:
             })
         return {"items": items, "total": len(agents)}
 
-    @app.get("/agents/{agent_id}/usage")
+    @app.get("/agents/{agent_id}/usage", tags=["Agents"])
     async def agent_usage(agent_id: str) -> dict[str, Any]:
         """Get detailed usage metrics for a specific agent."""
         if agent_id not in store.agents:
             raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
         return UsageMetrics(store).agent_usage(agent_id)
 
-    @app.get("/metrics")
+    @app.get("/metrics", tags=["Metrics"])
     async def metrics(
         since: str | None = Query(None, description="ISO 8601 start datetime (e.g. 2026-01-01T00:00:00Z)"),
         until: str | None = Query(None, description="ISO 8601 end datetime"),
@@ -377,12 +377,12 @@ def create_app() -> FastAPI:
                 raise HTTPException(status_code=400, detail=f"Invalid 'until' datetime: {until}")
         return UsageMetrics(store).summary(since=parsed_since, until=parsed_until)
 
-    @app.get("/metrics/performance")
+    @app.get("/metrics/performance", tags=["Metrics"])
     async def performance() -> dict[str, Any]:
         from nexus.metrics.performance import PerformanceTracker
         return PerformanceTracker(store).latency()
 
-    @app.get("/metrics/workflows")
+    @app.get("/metrics/workflows", tags=["Metrics"])
     async def workflow_metrics() -> dict[str, Any]:
         total = len(store.workflows)
         total_runs = sum(1 for e in store.audit_events if e.get("type") == "workflow.ran")
@@ -396,19 +396,19 @@ def create_app() -> FastAPI:
             "avg_run_duration_ms": avg_duration,
         }
 
-    @app.get("/metrics/agents")
+    @app.get("/metrics/agents", tags=["Metrics"])
     async def agent_performance() -> dict[str, Any]:
         """Get latency performance metrics broken down by agent."""
         from nexus.metrics.performance import PerformanceTracker
         return PerformanceTracker(store).by_agent()
 
-    @app.get("/metrics/tools")
+    @app.get("/metrics/tools", tags=["Metrics"])
     async def tool_performance() -> dict[str, Any]:
         """Get latency performance metrics broken down by tool."""
         from nexus.metrics.performance import PerformanceTracker
         return PerformanceTracker(store).by_tool()
 
-    @app.get("/agents/{agent_id}/calls")
+    @app.get("/agents/{agent_id}/calls", tags=["Agents"])
     async def agent_calls(
         agent_id: str,
         offset: int = Query(0, ge=0),
@@ -440,7 +440,7 @@ def create_app() -> FastAPI:
             "has_more": offset + limit < total,
         }
 
-    @app.get("/workflows/{workflow_id}/runs")
+    @app.get("/workflows/{workflow_id}/runs", tags=["Workflows"])
     async def workflow_runs(
         workflow_id: str,
         limit: int = Query(50, ge=1, le=200),
@@ -457,11 +457,10 @@ def create_app() -> FastAPI:
             "total": len(runs),
         }
 
-    @app.patch("/workflows/{workflow_id}")
+    @app.patch("/workflows/{workflow_id}", tags=["Workflows"])
     async def patch_workflow(workflow_id: str, request: WorkflowPatchRequest) -> dict[str, Any]:
         """Partially update a workflow (PATCH semantics — all fields optional)."""
         try:
-            from nexus.core.models import WorkflowStep
             wf = store.workflows.get(workflow_id)
             if wf is None:
                 raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
@@ -484,11 +483,11 @@ def create_app() -> FastAPI:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    @app.get("/health")
+    @app.get("/health", tags=["System"])
     async def health() -> dict[str, Any]:
         return manager.health()
 
-    @app.get("/health/detailed")
+    @app.get("/health/detailed", tags=["System"])
     async def health_detailed() -> dict[str, Any]:
         """Detailed health check including plugin capabilities and store stats."""
         plugins = manager.list_plugins()
@@ -510,21 +509,22 @@ def create_app() -> FastAPI:
             },
         }
 
-    @app.post("/store/export")
+    @app.post("/store/export", tags=["System"])
     async def export_store() -> dict[str, Any]:
         """Export the full store state for backup."""
         return store.export()
 
-    @app.post("/store/import")
+    @app.post("/store/import", tags=["System"])
     async def import_store(request: dict[str, Any]) -> dict[str, Any]:
         """Import store state from a previous export. Replaces all data."""
         store.import_(request)
         return {"imported": True, "agents": len(store.agents), "plugins": len(store.plugins)}
 
-    @app.get("/version")
+    @app.get("/version", tags=["System"])
     async def version() -> dict[str, str]:
         """Return the Nexus API version."""
         from nexus import __version__
+        return {"version": __version__}
         return {"version": __version__}
 
     app.state.store = store
