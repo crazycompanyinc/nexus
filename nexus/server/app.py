@@ -658,7 +658,6 @@ def create_app() -> FastAPI:
             A dict containing all store data (agents, plugins, bindings, etc.).
         """
         return store.export()
-        return store.export()
 
     @app.post("/store/import", tags=["System"])
     async def import_store(request: dict[str, Any]) -> dict[str, Any]:
@@ -670,7 +669,6 @@ def create_app() -> FastAPI:
         Returns:
             A dict confirming import with counts of imported entities.
         """
-        store.import_(request)
         store.import_(request)
         return {"imported": True, "agents": len(store.agents), "plugins": len(store.plugins)}
 
