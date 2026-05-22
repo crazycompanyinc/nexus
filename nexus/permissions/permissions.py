@@ -32,10 +32,30 @@ class PermissionModel:
     }
 
     def required_for_action(self, action: str) -> str:
+        """Determine the minimum permission level required for a given action.
+
+        Extracts the verb from the action string (e.g. 'list' from 'repos.list')
+        and looks it up in ACTION_REQUIREMENTS. Falls back to READ if unknown.
+
+        Args:
+            action: The action string, typically in 'resource.verb' format.
+
+        Returns:
+            The PermissionLevel value string required for this action.
+        """
         verb = action.rsplit(".", 1)[-1]
         return self.ACTION_REQUIREMENTS.get(verb, PermissionLevel.READ.value)
 
     def allows(self, granted: str, required: str) -> bool:
+        """Check if a granted permission level satisfies a required level.
+
+        Args:
+            granted: The permission level the agent currently holds.
+            required: The minimum permission level needed.
+
+        Returns:
+            True if granted level is >= required level.
+        """
         return self.ORDER[granted] >= self.ORDER[required]
 
     def __repr__(self) -> str:

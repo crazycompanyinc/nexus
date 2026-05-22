@@ -81,4 +81,12 @@ class PluginLoader:
 
 
 def plugin_ids(plugins: Iterable[Plugin]) -> list[str]:
+    """Extract metadata IDs from an iterable of plugins.
+
+    Args:
+        plugins: Plugin instances to extract IDs from.
+
+    Returns:
+        List of plugin ID strings.
+    """
     return [plugin.metadata.id for plugin in plugins]
