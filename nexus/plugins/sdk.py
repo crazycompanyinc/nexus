@@ -22,6 +22,11 @@ class PluginMetadata:
     status: str = "active"
 
     def to_model(self) -> ToolPlugin:
+        """Convert this metadata to a ToolPlugin model instance.
+
+        Returns:
+            A ToolPlugin populated with this metadata's fields.
+        """
         return ToolPlugin(
             id=self.id,
             name=self.name,
