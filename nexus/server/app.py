@@ -153,6 +153,20 @@ def create_app() -> FastAPI:
             return response
         return await call_next(request)
 
+    @app.middleware("http")
+    async def request_id_middleware(request: Request, call_next):
+        """Attach a unique request ID for traceability.
+
+        Uses ``X-Request-ID`` header if provided by the client,
+        otherwise generates a short UUID. The ID is injected into
+        the response headers so clients can correlate errors.
+        """
+        request_id = request.headers.get("X-Request-ID") or _uuid4().hex[:12]
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
     @app.exception_handler(PermissionError)
     async def permission_error_handler(request: Request, exc: PermissionError) -> JSONResponse:
         return JSONResponse(
