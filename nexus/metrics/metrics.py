@@ -16,13 +16,6 @@ class UsageMetrics:
         """Initialize metrics aggregator with a NexusStore.
 
         Args:
-class UsageMetrics:
-    """Aggregates and summarizes tool usage data from the NexusStore."""
-
-    def __init__(self, store: NexusStore) -> None:
-        """Initialize metrics aggregator with a NexusStore.
-
-        Args:
             store: The store containing call records to aggregate.
         """
         self.store = store
