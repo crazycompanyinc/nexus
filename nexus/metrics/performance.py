@@ -7,10 +7,20 @@ from nexus.metrics._stats import latency_stats, percentile
 
 
 class PerformanceTracker:
+    """Tracks latency and performance metrics for tool calls.
+
+    Provides overall, per-tool, and per-agent performance breakdowns.
+    """
+
     def __init__(self, store: NexusStore) -> None:
         self.store = store
 
     def latency(self) -> dict[str, Any]:
+        """Return overall latency statistics across all tool calls.
+
+        Returns:
+            Dict with avg_ms, max_ms, min_ms, p50, p95, p99, count.
+        """
         durations = [call.duration_ms for call in self.store.calls if call.duration_ms > 0]
         stats = latency_stats(durations)
         # Rename keys for backward-compatible API
