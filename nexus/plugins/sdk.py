@@ -44,16 +44,43 @@ class PluginMetadata:
 
 
 class Plugin(Protocol):
+    """Protocol that all Nexus plugins must implement.
+
+    Plugins must provide a metadata attribute and execute/health methods.
+    """
+
     metadata: PluginMetadata
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute an action on this plugin.
+
+        Args:
+            action: The action to perform.
+            params: Parameters for the action.
+
+        Returns:
+            The result of the action execution.
+
+        Raises:
+            NotImplementedError: If the action is not supported.
+        """
         ...
 
     def health(self) -> dict[str, Any]:
+        """Return the health status of this plugin.
+
+        Returns:
+            Dict with at minimum a 'status' key indicating plugin health.
+        """
         ...
 
 
 class BasePlugin:
+    """Base class for plugins providing default capability and health methods.
+
+    Subclasses should override metadata and implement execute().
+    """
+
     metadata = PluginMetadata(
         id="base",
         name="base",
@@ -64,12 +91,31 @@ class BasePlugin:
     )
 
     def get_capabilities(self) -> list[str]:
+        """Return the list of capabilities this plugin supports.
+
+        Returns:
+            List of capability strings from the plugin metadata.
+        """
         return list(self.metadata.capabilities)
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute an action — must be implemented by subclasses.
+
+        Args:
+            action: The action to perform.
+            params: Parameters for the action.
+
+        Raises:
+            NotImplementedError: Always, unless overridden by subclass.
+        """
         raise NotImplementedError(f"{self.metadata.id} does not implement {action}")
 
     def health(self) -> dict[str, Any]:
+        """Return basic health status.
+
+        Returns:
+            Dict with plugin id and status string.
+        """
         return {"plugin": self.metadata.id, "status": self.metadata.status}
 
 
@@ -77,9 +123,22 @@ _GLOBAL_REGISTRY: dict[str, Plugin] = {}
 
 
 def register(plugin: Plugin) -> Plugin:
+    """Register a plugin in the global registry.
+
+    Args:
+        plugin: The plugin instance to register.
+
+    Returns:
+        The same plugin instance, for use as a decorator.
+    """
     _GLOBAL_REGISTRY[plugin.metadata.id] = plugin
     return plugin
 
 
 def registered_plugins() -> dict[str, Plugin]:
+    """Return a copy of the global plugin registry.
+
+    Returns:
+        Dict mapping plugin IDs to plugin instances.
+    """
     return dict(_GLOBAL_REGISTRY)
