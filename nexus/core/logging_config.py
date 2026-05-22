@@ -44,6 +44,14 @@ class CorrelationFilter(logging.Filter):
         self.component = component
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """Inject correlation_id and component into the log record.
+
+        Args:
+            record: The log record to enrich.
+
+        Returns:
+            True (always allows the record through).
+        """
         record.correlation_id = get_correlation_id()  # type: ignore[attr-defined]
         record.component = self.component  # type: ignore[attr-defined]
         return True
@@ -56,6 +64,14 @@ class StructuredFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format log record as [correlation_id] LEVEL component: message.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            Formatted log line string.
+        """
         cid = getattr(record, "correlation_id", "-")
         component = getattr(record, "component", "nexus")
         record.msg = f"[{cid}] {record.levelname} {component}: {record.msg}"
