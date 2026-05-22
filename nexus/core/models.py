@@ -103,6 +103,14 @@ class ToolPlugin:
     registered_at: datetime = field(default_factory=utcnow)
 
     def supports(self, action: str) -> bool:
+        """Check if this plugin supports a given action.
+
+        Args:
+            action: The action string to check (e.g. 'file.read').
+
+        Returns:
+            True if the action is in capabilities or wildcard '*' is present.
+        """
         return action in self.capabilities or "*" in self.capabilities
 
     def __repr__(self) -> str:

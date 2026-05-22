@@ -186,6 +186,7 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(KeyError)
     async def not_found_handler(request: Request, exc: KeyError) -> JSONResponse:
+        """Handle KeyError exceptions, returning a structured 404 JSON response."""
         return JSONResponse(
             status_code=404,
             content=ErrorResponse(error="not_found", detail=str(exc), code="NOT_FOUND").model_dump(),
@@ -193,6 +194,7 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(ValueError)
     async def bad_request_handler(request: Request, exc: ValueError) -> JSONResponse:
+        """Handle ValueError exceptions, returning a structured 400 JSON response."""
         return JSONResponse(
             status_code=400,
             content=ErrorResponse(error="bad_request", detail=str(exc), code="BAD_REQUEST").model_dump(),

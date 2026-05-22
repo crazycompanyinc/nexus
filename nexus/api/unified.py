@@ -195,7 +195,19 @@ class UnifiedToolAPI:
         return results
 
     def grant(self, agent_id: str, tool_id: str, level: str) -> None:
+        """Grant a permission level to an agent for a specific tool.
+
+        Args:
+            agent_id: The agent to grant permissions to.
+            tool_id: The tool identifier.
+            level: Permission level (read, write, admin).
+        """
         self.access.grant(agent_id, tool_id, level)
 
     def discover(self) -> dict[str, list[str]]:
+        """Discover all available tool capabilities.
+
+        Returns:
+            Dict mapping each tool ID to its list of supported capability strings.
+        """
         return self.plugins.discover()
