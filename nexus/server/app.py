@@ -71,12 +71,24 @@ class PaginatedResponse(BaseModel):
 
 
 class ErrorResponse(BaseModel):
+    """Standard error response envelope returned by all API error handlers."""
+
     error: str
     detail: str | None = None
     code: str | None = None
 
 
 class CallRequest(BaseModel):
+    """Request model for executing a tool call via the Nexus API.
+
+    Attributes:
+        agent_id: Unique identifier of the calling agent.
+        tool_id: Target tool plugin ID (empty string for auto-discovery).
+        action: The action to invoke on the target tool.
+        params: Key-value parameters forwarded to the tool action.
+        fallback_tools: Ordered list of alternate tool IDs if the primary fails.
+    """
+
     agent_id: str
     tool_id: str = ""
     action: str
@@ -99,6 +111,14 @@ class CallRequest(BaseModel):
 
 
 class BindingRequest(BaseModel):
+    """Request model for creating an agent-to-tool permission binding.
+
+    Attributes:
+        agent_id: Unique identifier of the agent.
+        tool_id: Target tool plugin ID to bind.
+        level: Permission level — one of 'read', 'write', or 'admin'.
+    """
+
     agent_id: str
     tool_id: str
     level: str
@@ -115,6 +135,15 @@ class BindingRequest(BaseModel):
 
 
 class WorkflowRequest(BaseModel):
+    """Request model for creating a new workflow pipeline.
+
+    Attributes:
+        name: Human-readable workflow name.
+        steps: Ordered list of step definitions (dicts with tool/action/params).
+        created_by: Identifier of the user or agent creating the workflow.
+        description: Optional workflow description.
+    """
+
     name: str
     steps: list[dict[str, Any]]
     created_by: str
@@ -122,6 +151,8 @@ class WorkflowRequest(BaseModel):
 
 
 class WorkflowPatchRequest(BaseModel):
+    """Partial update model for patching an existing workflow."""
+
     name: str | None = None
     steps: list[dict[str, Any]] | None = None
     created_by: str | None = None
