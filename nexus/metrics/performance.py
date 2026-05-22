@@ -13,6 +13,11 @@ class PerformanceTracker:
     """
 
     def __init__(self, store: NexusStore) -> None:
+        """Initialize the performance tracker with a NexusStore.
+
+        Args:
+            store: The store containing call records with duration data.
+        """
         self.store = store
 
     def latency(self) -> dict[str, Any]:

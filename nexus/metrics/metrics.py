@@ -10,7 +10,14 @@ from nexus.metrics._stats import latency_stats
 
 
 class UsageMetrics:
+    """Aggregates and summarizes tool usage data from the NexusStore."""
+
     def __init__(self, store: NexusStore) -> None:
+        """Initialize metrics aggregator with a NexusStore.
+
+        Args:
+            store: The store containing call records to aggregate.
+        """
         self.store = store
 
     def summary(
@@ -124,6 +131,15 @@ class UsageMetrics:
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> list[ToolCall]:
+        """Filter store calls by optional time range.
+
+        Args:
+            since: Only include calls at or after this datetime.
+            until: Only include calls at or before this datetime.
+
+        Returns:
+            Filtered list of ToolCall objects.
+        """
         calls: list[ToolCall] = list(self.store.calls)
         if since is not None:
             calls = [c for c in calls if c.called_at >= since]
