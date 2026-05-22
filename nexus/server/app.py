@@ -621,6 +621,11 @@ def create_app() -> FastAPI:
 
     @app.get("/health", tags=["System"])
     async def health() -> dict[str, Any]:
+        """Get basic health status of all registered plugins.
+
+        Returns:
+            A dict with plugin health information.
+        """
         return manager.health()
 
     @app.get("/health/detailed", tags=["System"])
@@ -647,12 +652,25 @@ def create_app() -> FastAPI:
 
     @app.post("/store/export", tags=["System"])
     async def export_store() -> dict[str, Any]:
-        """Export the full store state for backup."""
+        """Export the full store state for backup.
+
+        Returns:
+            A dict containing all store data (agents, plugins, bindings, etc.).
+        """
+        return store.export()
         return store.export()
 
     @app.post("/store/import", tags=["System"])
     async def import_store(request: dict[str, Any]) -> dict[str, Any]:
-        """Import store state from a previous export. Replaces all data."""
+        """Import store state from a previous export. Replaces all data.
+
+        Args:
+            request: The store state to import.
+
+        Returns:
+            A dict confirming import with counts of imported entities.
+        """
+        store.import_(request)
         store.import_(request)
         return {"imported": True, "agents": len(store.agents), "plugins": len(store.plugins)}
 
