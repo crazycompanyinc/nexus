@@ -525,7 +525,6 @@ def create_app() -> FastAPI:
         """Return the Nexus API version."""
         from nexus import __version__
         return {"version": __version__}
-        return {"version": __version__}
 
     app.state.store = store
     app.state.manager = manager
