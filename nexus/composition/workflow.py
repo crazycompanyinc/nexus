@@ -14,6 +14,35 @@ logger = logging.getLogger(__name__)
 __all__ = ["Pipeline", "StepResult", "Workflow", "WorkflowBuilder", "WorkflowStep"]
 
 
+def _parse_step_dict(step: dict[str, Any]) -> WorkflowStep:
+    """Parse a step dict into a WorkflowStep, applying defaults for missing fields.
+
+    Centralises step parsing so that create(), update(), and PATCH all
+    use the same validation logic.
+
+    Args:
+        step: Dict with 'tool_id', 'action', and optional fields.
+
+    Returns:
+        A validated WorkflowStep instance.
+
+    Raises:
+        KeyError: If 'tool_id' or 'action' is missing.
+        TypeError: If step is not a dict.
+    """
+    if not isinstance(step, dict):
+        raise TypeError(f"Each step must be a dict, got {type(step).__name__}")
+    return WorkflowStep(
+        tool_id=step["tool_id"],
+        action=step["action"],
+        params=step.get("params", {}),
+        condition=step.get("condition"),
+        fallback_tools=step.get("fallback_tools", []),
+        max_retries=step.get("max_retries", 0),
+        retry_delay_ms=step.get("retry_delay_ms", 100.0),
+    )
+
+
 class WorkflowBuilder:
     """Creates, updates, and manages workflow definitions.
 
