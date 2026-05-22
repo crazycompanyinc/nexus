@@ -422,14 +422,39 @@ def create_app() -> FastAPI:
 
     @app.get("/agents/{agent_id}/permissions", tags=["Agents"])
     async def agent_permissions(agent_id: str) -> list[dict[str, Any]]:
+        """List all tool permission bindings for a specific agent.
+
+        Args:
+            agent_id: The agent to query.
+
+        Returns:
+            A list of binding dicts with tool_id and permission level.
+        """
         return [asdict(b) for b in api.access.list_agent_permissions(agent_id)]
 
     @app.get("/audit", tags=["Audit"])
     async def audit_trail(limit: int = 50) -> list[dict[str, Any]]:
+        """Retrieve the most recent audit events.
+
+        Args:
+            limit: Maximum number of events to return.
+
+        Returns:
+            A list of audit event dicts, most recent first.
+        """
         return store.audit_events[-limit:]
 
     @app.delete("/bindings/{agent_id}/{tool_id}", tags=["Bindings"])
     async def unbind(agent_id: str, tool_id: str) -> dict[str, Any]:
+        """Revoke a tool binding from an agent.
+
+        Args:
+            agent_id: The agent to revoke access from.
+            tool_id: The tool to unbind.
+
+        Returns:
+            A dict confirming the revocation.
+        """
         api.access.revoke(agent_id, tool_id)
         return {"revoked": True, "agent_id": agent_id, "tool_id": tool_id}
 
@@ -480,11 +505,21 @@ def create_app() -> FastAPI:
 
     @app.get("/metrics/performance", tags=["Metrics"])
     async def performance() -> dict[str, Any]:
+        """Get latency performance percentiles across all tool calls.
+
+        Returns:
+            A dict with p50, p95, p99 latency values and call count.
+        """
         from nexus.metrics.performance import PerformanceTracker
         return PerformanceTracker(store).latency()
 
     @app.get("/metrics/workflows", tags=["Metrics"])
     async def workflow_metrics() -> dict[str, Any]:
+        """Get aggregate workflow execution metrics.
+
+        Returns:
+            A dict with total workflows, runs, failures, and average duration.
+        """
         total = len(store.workflows)
         total_runs = sum(1 for e in store.audit_events if e.get("type") == "workflow.ran")
         total_failures = sum(1 for e in store.audit_events if e.get("type") == "workflow.step_failed")
