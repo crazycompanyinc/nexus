@@ -11,6 +11,7 @@ class PluginRegistry:
     """
 
     def __init__(self) -> None:
+        """Initialize an empty plugin registry."""
         self._plugins: dict[str, Plugin] = {}
 
     def register(self, plugin: Plugin) -> ToolPlugin:

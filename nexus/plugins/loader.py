@@ -72,6 +72,17 @@ class PluginLoader:
         return plugins
 
     def _plugins_from_module(self, module: object) -> list[Plugin]:
+        """Discover plugins in a loaded module.
+
+        First checks for a module-level `plugin` factory function.
+        Then scans for BasePlugin subclasses.
+
+        Args:
+            module: The loaded Python module to scan.
+
+        Returns:
+            List of Plugin instances found in the module.
+        """
         if hasattr(module, "plugin"):
             return [module.plugin()]
         discovered: list[Plugin] = []
