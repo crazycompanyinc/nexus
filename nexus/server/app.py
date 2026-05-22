@@ -448,19 +448,9 @@ def create_app() -> FastAPI:
                 wf.description = request.description
             if request.created_by is not None and request.created_by:
                 wf.created_by = request.created_by
+            from nexus.composition.workflow import _parse_step_dict
             if request.steps:
-                wf.steps = [
-                    WorkflowStep(
-                        tool_id=s["tool_id"],
-                        action=s["action"],
-                        params=s.get("params", {}),
-                        condition=s.get("condition"),
-                        fallback_tools=s.get("fallback_tools", []),
-                        max_retries=s.get("max_retries", 0),
-                        retry_delay_ms=s.get("retry_delay_ms", 100.0),
-                    )
-                    for s in request.steps
-                ]
+                wf.steps = [_parse_step_dict(s) for s in request.steps]
             errors = wf.validate()
             if errors:
                 raise HTTPException(status_code=400, detail=f"Validation failed: {'; '.join(errors)}")
