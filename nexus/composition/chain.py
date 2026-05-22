@@ -6,6 +6,12 @@ from nexus.api.unified import UnifiedToolAPI
 
 
 class ToolChain:
+    """Chains multiple tool calls into a sequential pipeline.
+
+    Each step calls a tool with optional fallback tools and params.
+    Supports conditional execution with fail-fast mode.
+    """
+
     def __init__(self, api: UnifiedToolAPI, agent_id: str) -> None:
         self.api = api
         self.agent_id = agent_id
@@ -18,10 +24,26 @@ class ToolChain:
         params: dict[str, Any] | None = None,
         fallback_tools: list[str] | None = None,
     ) -> Self:
+        """Add a tool call step to the chain.
+
+        Args:
+            tool_id: The tool plugin identifier.
+            action: The action to invoke.
+            params: Optional parameters dict for the call.
+            fallback_tools: Optional list of fallback tool IDs.
+
+        Returns:
+            Self, for method chaining.
+        """
         self.steps.append((tool_id, action, params or {}, fallback_tools or []))
         return self
 
     def run(self) -> list[Any]:
+        """Execute all steps sequentially and return their results.
+
+        Returns:
+            List of results from each step in order.
+        """
         results: list[Any] = []
         for tool_id, action, params, fallback_tools in self.steps:
             results.append(

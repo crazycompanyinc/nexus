@@ -19,6 +19,15 @@ class UsageMetrics:
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> dict[str, Any]:
+        """Return a summary of all tool usage within an optional time range.
+
+        Args:
+            since: Only include calls at or after this datetime.
+            until: Only include calls at or before this datetime.
+
+        Returns:
+            Dict with total_calls, by_tool, by_agent, by_status, latency_ms, error_rate.
+        """
         calls = self._filter_calls(since=since, until=until)
         by_tool = Counter(call.tool_id for call in calls)
         by_agent = Counter(call.agent_id for call in calls)
@@ -36,6 +45,17 @@ class UsageMetrics:
         }
 
     def tool_usage(self, tool_id: str) -> dict[str, Any]:
+        """Return usage statistics for a specific tool.
+
+        Args:
+            tool_id: The tool identifier to query.
+
+        Returns:
+            Dict with tool_id, calls count, agents list, and latency stats.
+
+        Raises:
+            ValueError: If tool_id is empty or not a string.
+        """
         if not isinstance(tool_id, str) or not tool_id.strip():
             raise ValueError(f"tool_id must be a non-empty string, got {tool_id!r}")
         calls = [call for call in self.store.calls if call.tool_id == tool_id]
@@ -48,6 +68,17 @@ class UsageMetrics:
         }
 
     def agent_usage(self, agent_id: str) -> dict[str, Any]:
+        """Return usage statistics for a specific agent.
+
+        Args:
+            agent_id: The agent identifier to query.
+
+        Returns:
+            Dict with agent_id, calls count, actions breakdown, and latency stats.
+
+        Raises:
+            ValueError: If agent_id is empty or not a string.
+        """
         if not isinstance(agent_id, str) or not agent_id.strip():
             raise ValueError(f"agent_id must be a non-empty string, got {agent_id!r}")
         calls = [call for call in self.store.calls if call.agent_id == agent_id]

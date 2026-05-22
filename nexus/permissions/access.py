@@ -40,10 +40,26 @@ class AccessControl:
         return binding
 
     def revoke(self, agent_id: str, tool_id: str) -> None:
+        """Revoke all permissions for an agent on a specific tool.
+
+        Args:
+            agent_id: The agent whose permissions to revoke.
+            tool_id: The tool to revoke access from.
+        """
         self.store.unbind_tool(agent_id, tool_id)
         self.store.audit("permission.revoked", agent_id=agent_id, tool_id=tool_id)
 
     def check(self, agent_id: str, tool_id: str, action: str) -> bool:
+        """Check whether an agent has permission to perform an action on a tool.
+
+        Args:
+            agent_id: The agent to check.
+            tool_id: The tool to check against.
+            action: The action the agent wants to perform.
+
+        Returns:
+            True if the agent has sufficient permissions, False otherwise.
+        """
         binding = self.store.get_binding(agent_id, tool_id)
         if binding is None:
             return False
@@ -51,14 +67,41 @@ class AccessControl:
         return self.model.allows(binding.permissions, required)
 
     def require(self, agent_id: str, tool_id: str, action: str) -> None:
+        """Enforce that an agent has permission, raising PermissionError if not.
+
+        Args:
+            agent_id: The agent to check.
+            tool_id: The tool to check against.
+            action: The action the agent wants to perform.
+
+        Raises:
+            PermissionError: If the agent lacks the required permission level.
+        """
         if not self.check(agent_id, tool_id, action):
             self.store.audit("permission.denied", agent_id=agent_id, tool_id=tool_id, action=action)
             raise PermissionError(f"{agent_id} cannot call {tool_id}.{action}")
 
     def list_agent_permissions(self, agent_id: str) -> list[AgentToolBinding]:
+        """List all tool bindings for a specific agent.
+
+        Args:
+            agent_id: The agent to list permissions for.
+
+        Returns:
+            List of AgentToolBinding objects for the agent.
+        """
         return [binding for binding in self.store.bindings.values() if binding.agent_id == agent_id]
 
     def is_admin(self, agent_id: str, tool_id: str) -> bool:
+        """Check if an agent has admin-level access to a tool.
+
+        Args:
+            agent_id: The agent to check.
+            tool_id: The tool to check against.
+
+        Returns:
+            True if the agent has admin permissions on the tool.
+        """
         binding = self.store.get_binding(agent_id, tool_id)
         return bool(binding and binding.permissions == PermissionLevel.ADMIN.value)
 
