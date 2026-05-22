@@ -224,22 +224,30 @@ def grant(agent: str, tool_id: str, level: str) -> None:
 
 @cli.command()
 def metrics() -> None:
+    """Display current usage metrics summary."""
     emit(UsageMetrics(runtime.store).summary())
 
 
 @cli.command()
 def health() -> None:
+    """Display plugin health status."""
     emit(runtime.manager.health())
 
 
 @cli.command()
 @click.option("--port", default=8000)
 def serve(port: int) -> None:
+    """Start the Nexus FastAPI server.
+
+    Args:
+        port: Port number to bind the server to (default: 8000).
+    """
     uvicorn.run(create_app(), host="127.0.0.1", port=port)
 
 
 @cli.command()
 def demo() -> None:
+    """Run a demo: install builtins, register agents, grant permissions, and call tools."""
     runtime.manager.install_all_builtins()
     for agent in ["Felix-CTO", "Agent-Alpha", "Felix-Jim"]:
         runtime.store.register_agent(agent)

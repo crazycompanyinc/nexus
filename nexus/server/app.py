@@ -214,6 +214,15 @@ def create_app() -> FastAPI:
         offset: int = Query(0, ge=0),
         limit: int = Query(50, ge=1, le=200),
     ) -> dict[str, Any]:
+        """List all registered plugins with pagination.
+
+        Args:
+            offset: Number of plugins to skip (0-indexed).
+            limit: Maximum number of plugins to return (1-200).
+
+        Returns:
+            Paginated response with items, total count, and has_more flag.
+        """
         all_plugins = manager.list_plugins()
         items = [asdict(p) for p in all_plugins[offset : offset + limit]]
         return {
