@@ -129,6 +129,15 @@ class WorkflowPatchRequest(BaseModel):
 
 
 def create_app() -> FastAPI:
+    """Create and configure the Nexus FastAPI application.
+
+    Initializes all core components (store, plugin manager, API, workflows,
+    pipeline), registers middleware (rate limiting, request ID, CORS), exception
+    handlers, and all API route endpoints.
+
+    Returns:
+        A fully configured FastAPI application instance ready to serve.
+    """
     store = NexusStore()
     manager = PluginManager(store)
     api = UnifiedToolAPI(store, manager, AccessControl(store))
