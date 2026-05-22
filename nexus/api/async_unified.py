@@ -32,6 +32,15 @@ class AsyncUnifiedToolAPI:
         max_retries: int = 3,
         retry_base_delay: float = 0.1,
     ) -> None:
+        """Initialize the async API with optional store, plugin manager, and access control.
+
+        Args:
+            store: NexusStore instance for persistence. Created if not provided.
+            plugin_manager: PluginManager for tool resolution. Created if not provided.
+            access_control: AccessControl for permission checks. Created if not provided.
+            max_retries: Maximum retry attempts per tool candidate (>= 0).
+            retry_base_delay: Base delay in seconds for exponential backoff (>= 0.0).
+        """
         self.store = store or NexusStore()
         self.plugins = plugin_manager or PluginManager(self.store)
         self.access = access_control or AccessControl(self.store)
@@ -100,6 +109,24 @@ class AsyncUnifiedToolAPI:
     async def _call_one(
         self, agent_id: str, tool_id: str, action: str, params: dict[str, Any]
     ) -> Any:
+        """Execute a single async tool call with permission checking and timing.
+
+        Runs the blocking plugin execute in a thread pool via asyncio.to_thread.
+
+        Args:
+            agent_id: The agent making the call.
+            tool_id: The target tool plugin identifier.
+            action: The action to invoke.
+            params: Key-value parameters for the action.
+
+        Returns:
+            The result returned by the tool plugin.
+
+        Raises:
+            PermissionError: If the agent lacks access for the requested action.
+            TimeoutError: If the tool execution exceeds the timeout.
+            Exception: Any exception raised by the tool plugin execution.
+        """
         started = perf_counter()
         call = ToolCall(agent_id=agent_id, tool_id=tool_id, action=action, params=params)
         try:
@@ -147,6 +174,15 @@ class AsyncUnifiedToolAPI:
         semaphore = asyncio.Semaphore(max_concurrency)
 
         async def _bounded_call(idx: int, call_spec: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+            """Execute a single batched call with semaphore-bounded concurrency.
+
+            Args:
+                idx: Original index in the batch for result ordering.
+                call_spec: Dict with tool_id, action, optional params/fallback_tools.
+
+            Returns:
+                Tuple of (original_index, result_dict) with success/error info.
+            """
             async with semaphore:
                 tool_id = call_spec["tool_id"]
                 action = call_spec["action"]
