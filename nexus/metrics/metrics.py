@@ -167,7 +167,7 @@ class UsageMetrics:
         the timestamp, total calls, and error count.
 
         Args:
-            bucket: Time bucket size — "minute", "hour", or "day".
+            bucket: Time bucket size - "minute", "hour", or "day".
             since: Only include calls at or after this datetime.
             until: Only include calls at or before this datetime.
 
