@@ -19,6 +19,7 @@ class FileSystemPlugin(BasePlugin):
         self.files = {"README.md": "# Nexus\n"}
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute a filesystem action (file.read, file.write, file.list, file.watch)."""
         path = params.get("path", "README.md")
         if action == "file.read":
             return {"path": path, "content": self.files.get(path, "")}

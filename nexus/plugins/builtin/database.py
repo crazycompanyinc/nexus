@@ -18,6 +18,7 @@ class DatabasePlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute a database action (query.run, records.insert, records.find)."""
         if action == "query.run":
             return {"rows": [{"result": 1}], "query": params.get("query", "select 1")}
         if action == "records.insert":

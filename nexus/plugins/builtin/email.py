@@ -18,6 +18,7 @@ class EmailPlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute an email action (email.send, email.receive, email.search)."""
         if action == "email.send":
             return {"sent": True, "to": params.get("to"), "subject": params.get("subject", "")}
         if action == "email.receive":

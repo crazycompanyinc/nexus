@@ -16,6 +16,7 @@ class KubernetesPlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute a Kubernetes action (pods.list, services.list, deployments.list, deployments.restart)."""
         if action == "pods.list":
             return [{"name": "nexus-api-0", "phase": "Running"}]
         if action == "services.list":

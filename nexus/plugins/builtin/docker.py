@@ -16,6 +16,7 @@ class DockerPlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute a Docker action (containers.list, images.list, compose.up, compose.down)."""
         if action == "containers.list":
             return [{"name": "nexus-api", "status": "running"}]
         if action == "images.list":

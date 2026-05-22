@@ -18,6 +18,7 @@ class JiraPlugin(BasePlugin):
     )
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
+        """Execute a Jira action (tickets, sprints, boards)."""
         if action == "tickets.create":
             return {"key": "NEX-1", "summary": params.get("summary", "New ticket"), "status": "open"}
         if action == "tickets.update":
