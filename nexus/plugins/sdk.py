@@ -8,6 +8,22 @@ from nexus.core.models import ToolPlugin
 
 @dataclass(slots=True)
 class PluginMetadata:
+    """Metadata describing a Nexus plugin.
+
+    Attributes:
+        id: Unique plugin identifier (used as lookup key).
+        name: Human-readable plugin name.
+        description: Short description of what the plugin does.
+        version: Semantic version string.
+        plugin_type: Category of the plugin (e.g., 'service', 'library').
+        capabilities: List of action strings the plugin supports.
+        endpoint: Optional HTTP endpoint URL for remote plugins.
+        auth_required: Whether authentication is needed for this plugin.
+        auth_type: Type of authentication required (e.g., 'bearer', 'basic').
+        config_schema: JSON schema dict for plugin configuration.
+        health_check_endpoint: Optional URL path for plugin health checks.
+        status: Current plugin status ('active', 'inactive', etc.).
+    """
     id: str
     name: str
     description: str

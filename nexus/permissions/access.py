@@ -7,6 +7,13 @@ from nexus.permissions.permissions import PermissionModel
 
 class AccessControl:
     def __init__(self, store: NexusStore, model: PermissionModel | None = None) -> None:
+        """Initialize access control with a store and optional permission model.
+
+        Args:
+            store: NexusStore for reading/writing bindings and audit logs.
+            model: PermissionModel defining level ordering and action requirements.
+                   Uses default if not provided.
+        """
         self.store = store
         self.model = model or PermissionModel()
 

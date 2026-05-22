@@ -4,6 +4,8 @@ from nexus.core.models import PermissionLevel
 
 
 class PermissionModel:
+    """Defines permission levels and maps actions to required access levels."""
+
     ORDER = {
         PermissionLevel.READ.value: 1,
         PermissionLevel.WRITE.value: 2,
