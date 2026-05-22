@@ -68,18 +68,7 @@ class WorkflowBuilder:
             raise TypeError(f"steps must be a list, got {type(steps).__name__}")
         if not steps:
             raise ValueError("steps must contain at least one step")
-        workflow_steps = [
-            WorkflowStep(
-                tool_id=step["tool_id"],
-                action=step["action"],
-                params=step.get("params", {}),
-                condition=step.get("condition"),
-                fallback_tools=step.get("fallback_tools", []),
-                max_retries=step.get("max_retries", 0),
-                retry_delay_ms=step.get("retry_delay_ms", 100.0),
-            )
-            for step in steps
-        ]
+        workflow_steps = [_parse_step_dict(step) for step in steps]
         workflow = Workflow(
             id=str(uuid4()),
             name=name,
@@ -142,18 +131,7 @@ class WorkflowBuilder:
         if status is not None:
             workflow.status = status
         if steps is not None:
-            workflow.steps = [
-                WorkflowStep(
-                    tool_id=step["tool_id"],
-                    action=step["action"],
-                    params=step.get("params", {}),
-                    condition=step.get("condition"),
-                    fallback_tools=step.get("fallback_tools", []),
-                    max_retries=step.get("max_retries", 0),
-                    retry_delay_ms=step.get("retry_delay_ms", 100.0),
-                )
-                for step in steps
-            ]
+            workflow.steps = [_parse_step_dict(step) for step in steps]
         # Re-validate after all mutations
         errors = workflow.validate()
         if errors:
