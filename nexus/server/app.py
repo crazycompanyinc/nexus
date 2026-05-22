@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
+from uuid import uuid4 as _uuid4
 
 from nexus.api.unified import UnifiedToolAPI
 from nexus.composition.workflow import Pipeline, WorkflowBuilder
