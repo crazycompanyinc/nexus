@@ -310,6 +310,11 @@ class Workflow:
     created_at: datetime = field(default_factory=utcnow)
 
     def __repr__(self) -> str:
+        """Return a concise developer-friendly representation.
+
+        Returns:
+            String with id prefix, name, step count, trigger, and status.
+        """
         return f"Workflow(id={self.id[:8]}…, name={self.name!r}, steps={len(self.steps)}, trigger={self.trigger!r}, status={self.status!r})"
 
     def validate(self) -> list[str]:
