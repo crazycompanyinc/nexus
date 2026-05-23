@@ -204,3 +204,68 @@ class UsageMetrics:
         total = len(self.store.calls)
         errors = sum(1 for c in self.store.calls if c.status == "error")
         return f"UsageMetrics(total_calls={total}, errors={errors}, agents={len(self.store.agents)})"
+
+    def top_tools(self, n: int = 5) -> list[dict[str, Any]]:
+        """Return the most frequently used tools ranked by call count.
+
+        Args:
+            n: Number of top tools to return.
+
+        Returns:
+            List of dicts with keys: tool_id, calls, avg_duration_ms, error_rate.
+
+        Example:
+            >>> top = metrics.top_tools(3)
+            >>> top[0]["tool_id"]
+            'http'
+        """
+        from collections import Counter, defaultdict
+
+        tool_calls: dict[str, list[ToolCall]] = defaultdict(list)
+        for call in self.store.calls:
+            tool_calls[call.tool_id].append(call)
+
+        ranked = sorted(tool_calls.items(), key=lambda x: len(x[1]), reverse=True)
+        result: list[dict[str, Any]] = []
+        for tool_id, calls in ranked[:n]:
+            durations = [c.duration_ms for c in calls if c.duration_ms > 0]
+            errors = sum(1 for c in calls if c.status == "error")
+            avg_dur = round(sum(durations) / len(durations), 2) if durations else 0.0
+            result.append({
+                "tool_id": tool_id,
+                "calls": len(calls),
+                "avg_duration_ms": avg_dur,
+                "error_rate": round(errors / len(calls), 4) if calls else 0.0,
+            })
+        return result
+
+    def slow_calls(self, threshold_ms: float = 1000.0, *, limit: int = 20) -> list[dict[str, Any]]:
+        """Return calls that exceeded a duration threshold.
+
+        Useful for performance debugging and identifying bottlenecks.
+
+        Args:
+            threshold_ms: Duration threshold in milliseconds.
+            limit: Maximum number of results to return.
+
+        Returns:
+            List of dicts with keys: call_id, agent_id, tool_id, action,
+            duration_ms, status, called_at. Sorted by duration descending.
+
+        Example:
+            >>> slow = metrics.slow_calls(threshold_ms=500.0, limit=10)
+        """
+        slow = [c for c in self.store.calls if c.duration_ms >= threshold_ms]
+        slow.sort(key=lambda c: c.duration_ms, reverse=True)
+        return [
+            {
+                "call_id": c.id,
+                "agent_id": c.agent_id,
+                "tool_id": c.tool_id,
+                "action": c.action,
+                "duration_ms": c.duration_ms,
+                "status": c.status,
+                "called_at": c.called_at.isoformat(),
+            }
+            for c in slow[:limit]
+        ]
