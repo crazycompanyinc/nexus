@@ -98,6 +98,17 @@ class CallRequest(BaseModel):
     @field_validator("agent_id")
     @classmethod
     def validate_agent_id(cls, v: str) -> str:
+        """Validate that agent_id is a non-empty string.
+
+        Args:
+            v: The agent_id value to validate.
+
+        Returns:
+            The stripped agent_id string.
+
+        Raises:
+            ValueError: If agent_id is empty or whitespace-only.
+        """
         if not v or not v.strip():
             raise ValueError("agent_id must be a non-empty string")
         return v.strip()
@@ -105,6 +116,17 @@ class CallRequest(BaseModel):
     @field_validator("action")
     @classmethod
     def validate_action(cls, v: str) -> str:
+        """Validate that action is a non-empty string.
+
+        Args:
+            v: The action value to validate.
+
+        Returns:
+            The stripped action string.
+
+        Raises:
+            ValueError: If action is empty or whitespace-only.
+        """
         if not v or not v.strip():
             raise ValueError("action must be a non-empty string")
         return v.strip()
@@ -126,6 +148,17 @@ class BindingRequest(BaseModel):
     @field_validator("level")
     @classmethod
     def validate_level(cls, v: str) -> str:
+        """Validate that the permission level is one of the allowed values.
+
+        Args:
+            v: The permission level string to validate.
+
+        Returns:
+            The validated permission level string.
+
+        Raises:
+            ValueError: If level is not one of 'read', 'write', or 'admin'.
+        """
         from nexus.core.models import PermissionLevel
 
         valid = {PermissionLevel.READ.value, PermissionLevel.WRITE.value, PermissionLevel.ADMIN.value}
