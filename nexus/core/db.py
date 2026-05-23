@@ -182,6 +182,29 @@ class NexusStore:
         """
         return len(self.calls)
 
+    def stats(self) -> dict[str, int]:
+        """Return summary statistics of the store contents.
+
+        Returns:
+            Dict with counts for agents, plugins, bindings, calls,
+            workflows, and audit_events.
+
+        Example:
+            >>> store = NexusStore()
+            >>> store.register_agent("a1")
+            >>> s = store.stats()
+            >>> s["agents"]
+            1
+        """
+        return {
+            "agents": len(self.agents),
+            "plugins": len(self.plugins),
+            "bindings": len(self.bindings),
+            "calls": len(self.calls),
+            "workflows": len(self.workflows),
+            "audit_events": len(self.audit_events),
+        }
+
     def __bool__(self) -> bool:
         """Return True — a NexusStore is always truthy.
 
