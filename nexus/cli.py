@@ -239,6 +239,57 @@ def health() -> None:
 
 
 @cli.command()
+def status() -> None:
+    """Display a formatted overview: plugins, agents, metrics, and health."""
+    plugins = runtime.manager.list_plugins()
+    agents = sorted(runtime.store.agents)
+    health_info = runtime.manager.health()
+    metrics_info = UsageMetrics(runtime.store).summary()
+
+    # Plugin summary table
+    plugin_lines = []
+    for p in plugins:
+        status_icon = "🟢" if p.status == "active" else "🔴"
+        caps = ", ".join(p.capabilities[:3])
+        if len(p.capabilities) > 3:
+            caps += f" (+{len(p.capabilities) - 3})"
+        plugin_lines.append(f"  {status_icon} {p.id:<20} {p.version:<8} [{caps}]")
+
+    # Health summary
+    health_entries = health_info if isinstance(health_info, list) else []
+    healthy = sum(1 for h in health_entries if isinstance(h, dict) and h.get("status") == "active")
+    unhealthy = len(health_entries) - healthy
+
+    lines = [
+        "╔══════════════════════════════════════════════════════════╗",
+        "║                   NEXUS STATUS OVERVIEW                 ║",
+        "╠══════════════════════════════════════════════════════════╣",
+        f"║  Agents:   {len(agents):<46}║",
+        f"║  Plugins:  {len(plugins):<46}║",
+        f"║  Healthy:  {healthy:<46}║",
+        f"║  Issues:   {unhealthy:<46}║",
+        "╠══════════════════════════════════════════════════════════╣",
+        "║  PLUGINS                                               ║",
+        "╠══════════════════════════════════════════════════════════╣",
+    ]
+    for pl in plugin_lines:
+        # Pad to fit box width (58 chars inside box)
+        padded = pl[:56].ljust(56)
+        lines.append(f"║{padded}  ║")
+    lines.append("╚══════════════════════════════════════════════════════════╝")
+
+    click.echo("\n".join(lines))
+
+    # Emit raw data as JSON below the formatted output
+    emit({
+        "agents": agents,
+        "plugins": [p.to_dict() for p in plugins],
+        "health": health_info,
+        "metrics": metrics_info,
+    })
+
+
+@cli.command()
 @click.option("--port", default=8000)
 def serve(port: int) -> None:
     """Start the Nexus FastAPI server.
