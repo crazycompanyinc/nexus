@@ -102,6 +102,58 @@ class PluginMetadata:
         """
         return hash(self.id)
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PluginMetadata:
+        """Reconstruct a PluginMetadata from a dict.
+
+        Accepts the same keys produced by ``to_dict()``. Extra keys
+        are silently ignored, making the method forward-compatible.
+
+        Args:
+            data: Dict with plugin metadata fields.
+
+        Returns:
+            A new PluginMetadata instance.
+
+        Example:
+            >>> data = {"id": "x", "name": "X", "description": "d",
+            ...         "version": "1.0.0", "plugin_type": "api",
+            ...         "capabilities": ["read"]}
+            >>> meta = PluginMetadata.from_dict(data)
+            >>> meta.id
+            'x'
+        """
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            description=data["description"],
+            version=data["version"],
+            plugin_type=data["plugin_type"],
+            capabilities=list(data.get("capabilities", [])),
+            endpoint=data.get("endpoint"),
+            auth_required=data.get("auth_required", False),
+            auth_type=data.get("auth_type"),
+            config_schema=dict(data.get("config_schema", {})),
+            health_check_endpoint=data.get("health_check_endpoint"),
+            status=data.get("status", "active"),
+        )
+
+    def to_json(self, **kwargs: Any) -> str:
+        """Serialize to a JSON string.
+
+        Args:
+            **kwargs: Extra keyword arguments forwarded to ``json.dumps()``.
+
+        Returns:
+            JSON string representation of this metadata.
+
+        Example:
+            >>> meta = PluginMetadata(id="x", name="X", description="d",
+            ...     version="1.0.0", plugin_type="api", capabilities=[])
+            >>> json_str = meta.to_json(indent=2)
+        """
+        return json.dumps(self.to_dict(), **kwargs)
+
 
 class Plugin(Protocol):
     """Protocol that all Nexus plugins must implement.
