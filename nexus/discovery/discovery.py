@@ -10,6 +10,11 @@ class CapabilityRegistry:
     """
 
     def __init__(self, manager: PluginManager) -> None:
+        """Initialize the capability registry with a plugin manager.
+
+        Args:
+            manager: PluginManager instance to wrap for lookups.
+        """
         self.manager = manager
 
     def all(self) -> dict[str, list[str]]:
