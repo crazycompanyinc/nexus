@@ -685,26 +685,17 @@ def create_app() -> FastAPI:
     async def patch_workflow(workflow_id: str, request: WorkflowPatchRequest) -> dict[str, Any]:
         """Partially update a workflow (PATCH semantics — all fields optional)."""
         try:
-            wf = store.workflows.get(workflow_id)
-            if wf is None:
-                raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
-            if request.name is not None and request.name:
-                wf.name = request.name
-            if request.description is not None and request.description:
-                wf.description = request.description
-            if request.created_by is not None and request.created_by:
-                wf.created_by = request.created_by
-            from nexus.composition.workflow import _parse_step_dict
-            if request.steps:
-                wf.steps = [_parse_step_dict(s) for s in request.steps]
-            errors = wf.validate()
-            if errors:
-                raise HTTPException(status_code=400, detail=f"Validation failed: {'; '.join(errors)}")
-            store.audit("workflow.patched", workflow_id=workflow_id)
-            return wf.to_dict()
-        except HTTPException:
-            raise
-        except Exception as exc:
+            updated = workflows.patch(
+                workflow_id,
+                name=request.name,
+                description=request.description,
+                created_by=request.created_by,
+                steps=request.steps,
+            )
+            return updated.to_dict()
+        except KeyError:
+            raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+        except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/health", tags=["System"])
