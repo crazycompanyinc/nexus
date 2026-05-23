@@ -58,6 +58,48 @@ class PluginMetadata:
             status=self.status,
         )
 
+    def to_dict(self) -> dict[str, object]:
+        """Convert to a JSON-serializable dict.
+
+        Returns:
+            A dict representation suitable for JSON serialization.
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "version": self.version,
+            "plugin_type": self.plugin_type,
+            "capabilities": list(self.capabilities),
+            "endpoint": self.endpoint,
+            "auth_required": self.auth_required,
+            "auth_type": self.auth_type,
+            "config_schema": dict(self.config_schema),
+            "health_check_endpoint": self.health_check_endpoint,
+            "status": self.status,
+        }
+
+    def __eq__(self, other: object) -> bool:
+        """Check equality by plugin id.
+
+        Args:
+            other: Another PluginMetadata to compare with.
+
+        Returns:
+            True if both have the same id.
+        """
+        if not isinstance(other, PluginMetadata):
+            return NotImplemented
+        return self.id == other.id
+
+    def __hash__(self) -> int:
+        """Hash by plugin id for use in sets and dicts.
+
+        Returns:
+            Hash of the plugin id.
+        """
+        return hash(self.id)
+
 
 class Plugin(Protocol):
     """Protocol that all Nexus plugins must implement.
