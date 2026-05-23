@@ -246,6 +246,20 @@ def create_app() -> FastAPI:
         response.headers["X-Request-ID"] = request_id
         return response
 
+    @app.middleware("http")
+    async def timing_middleware(request: Request, call_next):
+        """Add X-Response-Time header to every response.
+
+        Measures wall-clock time from request start to response
+        completion and attaches it as a milliseconds value in the
+        X-Response-Time header.
+        """
+        start = time.monotonic()
+        response = await call_next(request)
+        elapsed_ms = round((time.monotonic() - start) * 1000, 2)
+        response.headers["X-Response-Time"] = f"{elapsed_ms}ms"
+        return response
+
     @app.exception_handler(PermissionError)
     async def permission_error_handler(request: Request, exc: PermissionError) -> JSONResponse:
         """Handle PermissionError exceptions, returning a structured 403 JSON response."""
