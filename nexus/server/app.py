@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import asdict
 from typing import Any
@@ -17,6 +18,8 @@ from nexus.discovery.discovery import ToolDiscovery
 from nexus.metrics.metrics import UsageMetrics
 from nexus.permissions.access import AccessControl
 from nexus.plugins.manager import PluginManager
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimitMiddleware:
