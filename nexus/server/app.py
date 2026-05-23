@@ -707,8 +707,8 @@ def create_app() -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    @app.get("/health", tags=["System"])
-    async def health() -> dict[str, Any]:
+    @app.get("/health/plugins", tags=["System"])
+    async def health_plugins() -> dict[str, Any]:
         """Get basic health status of all registered plugins.
 
         Returns:
