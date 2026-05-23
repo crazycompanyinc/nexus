@@ -39,9 +39,19 @@ class EvalResult:
 
     @property
     def passed(self) -> bool:
+        """Whether the evaluation dimension passed (score >= 7.0).
+
+        Returns:
+            True if score meets or exceeds the passing threshold.
+        """
         return self.score >= 7.0
 
     def __repr__(self) -> str:
+        """Return a human-readable summary of the evaluation result.
+
+        Returns:
+            String with pass/fail emoji, dimension name, and score.
+        """
         status = "✅" if self.passed else "❌"
         return f"{status} {self.dimension}: {self.score:.1f}/{self.max_score}"
 
