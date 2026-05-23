@@ -400,14 +400,46 @@ def create_app() -> FastAPI:
 
     @app.post("/tools/batch", tags=["Tools"])
     async def batch_call(requests: list[CallRequest]) -> dict[str, Any]:
-        """Execute multiple tool calls in sequence."""
+        """Execute multiple tool calls concurrently with bounded parallelism.
+
+        Uses the async API internally to run calls concurrently rather than
+        sequentially, improving throughput for multi-tool batches.
+
+        Args:
+            requests: List of call requests, each with agent_id, tool_id, action, params.
+
+        Returns:
+            Dict with results list, succeeded count, and failed count.
+        """
+        from nexus.api.async_unified import AsyncUnifiedToolAPI as _AsyncAPI
+
+        async_api = _AsyncAPI(store, manager, AccessControl(store))
+        calls = [
+            {"tool_id": req.tool_id, "action": req.action, "params": req.params, "fallback_tools": req.fallback_tools}
+            for req in requests
+        ]
+        agent_ids = list({req.agent_id for req in requests})
+        primary_agent = agent_ids[0] if len(agent_ids) == 1 else "system"
+
+        raw_results = await async_api.batch_call(primary_agent, calls, fail_fast=False, max_concurrency=10)
         results = []
-        for req in requests:
-            try:
-                result = api.call(req.agent_id, req.tool_id, req.action, req.params, req.fallback_tools)
-                results.append({"tool_id": req.tool_id, "action": req.action, "result": result, "success": True})
-            except Exception as exc:
-                results.append({"tool_id": req.tool_id, "action": req.action, "error": str(exc), "success": False})
+        for req, res in zip(requests, raw_results):
+            if res["success"]:
+                results.append({
+                    "tool_id": req.tool_id,
+                    "action": req.action,
+                    "result": res["result"],
+                    "success": True,
+                    "duration_ms": res.get("duration_ms", 0),
+                })
+            else:
+                results.append({
+                    "tool_id": req.tool_id,
+                    "action": req.action,
+                    "error": res.get("error", "unknown"),
+                    "success": False,
+                    "duration_ms": res.get("duration_ms", 0),
+                })
         succeeded = sum(1 for r in results if r["success"])
         return {"results": results, "succeeded": succeeded, "failed": len(results) - succeeded}
 
