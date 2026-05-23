@@ -699,9 +699,35 @@ def create_app() -> FastAPI:
         """Get basic health status of all registered plugins.
 
         Returns:
-            A dict with plugin health information.
+            A dict with plugin health information and overall status.
         """
-        return manager.health()
+        plugin_health = manager.health()
+        all_healthy = all(
+            v.get("status") == "healthy" if isinstance(v, dict) else True
+            for v in plugin_health.values()
+        )
+        return {
+            "status": "healthy" if all_healthy else "degraded",
+            "plugins": plugin_health,
+        }
+
+    @app.get("/ready", tags=["System"])
+    async def readiness() -> dict[str, Any]:
+        """Readiness probe for orchestrators (K8s, Docker Compose).
+
+        Returns:
+            A dict with ``ready`` boolean and component status checks.
+        """
+        checks: dict[str, bool] = {
+            "store": store is not None,
+            "plugins": manager is not None,
+            "api": api is not None,
+        }
+        ready = all(checks.values())
+        return {
+            "ready": ready,
+            "checks": checks,
+        }
 
     @app.get("/health/detailed", tags=["System"])
     async def health_detailed() -> dict[str, Any]:
