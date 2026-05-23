@@ -579,6 +579,7 @@ def create_app() -> FastAPI:
 
         Raises:
             HTTPException: 404 if the workflow does not exist.
+            HTTPException: 400 if the workflow definition is invalid.
         """
         try:
             updated = workflows.update(
@@ -587,6 +588,12 @@ def create_app() -> FastAPI:
                 description=request.description,
                 steps=request.steps,
             )
+            errors = updated.validate()
+            if errors:
+                raise HTTPException(
+                    status_code=400,
+                    detail={"message": "Workflow validation failed", "errors": errors},
+                )
             return asdict(updated)
         except KeyError:
             raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
