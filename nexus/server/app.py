@@ -599,15 +599,48 @@ def create_app() -> FastAPI:
             agent_id: The agent to query.
 
         Returns:
-            A list of binding dicts with tool_id and permission level.
-        """
-        return [asdict(b) for b in api.access.list_agent_permissions(agent_id)]
+            A list of binding dicts with tool_id, permissions, and config.
 
-    @app.get("/audit", tags=["Audit"])
-    async def audit_trail(limit: int = 50) -> list[dict[str, Any]]:
-        """Retrieve the most recent audit events.
+        Raises:
+            HTTPException: 404 if the agent is not registered.
+        """
+        if agent_id not in store.agents:
+            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+        bindings = store.agent_bindings(agent_id)
+        return [b.to_dict() for b in bindings]
+
+    @app.get("/agents/{agent_id}/bindings", tags=["Agents"])
+    async def agent_bindings_detail(agent_id: str) -> dict[str, Any]:
+        """Get detailed binding info for an agent including resolved plugin metadata.
+
+        Returns each binding enriched with the plugin name, type, and capabilities
+        so clients can render a full permission matrix without additional lookups.
 
         Args:
+            agent_id: The agent to query.
+
+        Returns:
+            A dict with agent_id, binding count, and enriched bindings list.
+
+        Raises:
+            HTTPException: 404 if the agent is not registered.
+        """
+        if agent_id not in store.agents:
+            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+        bindings = store.agent_bindings(agent_id)
+        enriched: list[dict[str, Any]] = []
+        for b in bindings:
+            plugin = store.plugins.get(b.tool_id)
+            entry = b.to_dict()
+            entry["plugin_name"] = plugin.name if plugin else None
+            entry["plugin_type"] = plugin.plugin_type if plugin else None
+            entry["capabilities"] = plugin.capabilities if plugin else []
+            enriched.append(entry)
+        return {
+            "agent_id": agent_id,
+            "bindings": enriched,
+            "total": len(enriched),
+        }
             limit: Maximum number of events to return.
 
         Returns:
