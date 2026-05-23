@@ -133,6 +133,11 @@ class CircuitBreaker:
             raise
 
     def _on_success(self) -> None:
+        """Record a successful call through the circuit breaker.
+
+        If the circuit was half-open, transitions back to closed.
+        Resets the failure count and increments the success count.
+        """
         if self._state == CircuitState.HALF_OPEN.value:
             logger.info("Circuit breaker CLOSED — tool recovered")
             self._state = CircuitState.CLOSED.value
@@ -140,6 +145,11 @@ class CircuitBreaker:
         self._success_count += 1
 
     def _on_failure(self) -> None:
+        """Record a failed call through the circuit breaker.
+
+        Increments the failure count and updates the last failure timestamp.
+        Opens the circuit if the failure threshold is reached or exceeded.
+        """
         self._failure_count += 1
         self._last_failure_time = time.monotonic()
         if self._failure_count >= self.failure_threshold:
