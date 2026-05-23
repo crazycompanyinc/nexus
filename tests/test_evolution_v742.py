@@ -74,7 +74,7 @@ def populated_store() -> NexusStore:
 class TestToolCallToDict:
     """TestToolCallToDict."""
     def test_includes_all_fields(self):
-    """Test: includes all fields."""
+        """Test: includes all fields."""
         call = ToolCall(agent_id="a1", tool_id="http", action="fetch",
                         params={"url": "https://x.com"}, result={"ok": True},
                         duration_ms=42.0, status=CallStatus.SUCCESS.value)
@@ -90,7 +90,7 @@ class TestToolCallToDict:
         assert isinstance(d["called_at"], str)
 
     def test_iso_timestamp(self):
-    """Test: iso timestamp."""
+        """Test: iso timestamp."""
         call = ToolCall(agent_id="a", tool_id="t", action="foo", params={})
         d = call.to_dict()
         # Should be parseable ISO 8601
@@ -106,7 +106,7 @@ class TestToolCallToDict:
         assert "new" not in call.params
 
     def test_result_none(self):
-    """Test: result none."""
+        """Test: result none."""
         call = ToolCall(agent_id="a", tool_id="t", action="x", params={})
         d = call.to_dict()
         assert d["result"] is None
@@ -117,42 +117,42 @@ class TestToolCallToDict:
 class TestSearchCalls:
     """TestSearchCalls."""
     def test_filter_by_agent(self, populated_store):
-    """Test: filter by agent."""
+        """Test: filter by agent."""
         results = populated_store.search_calls(agent_id="agent-1")
         assert len(results) == 3
         assert all(c.agent_id == "agent-1" for c in results)
 
     def test_filter_by_tool(self, populated_store):
-    """Test: filter by tool."""
+        """Test: filter by tool."""
         results = populated_store.search_calls(tool_id="http")
         assert len(results) == 3
         assert all(c.tool_id == "http" for c in results)
 
     def test_filter_by_status(self, populated_store):
-    """Test: filter by status."""
+        """Test: filter by status."""
         results = populated_store.search_calls(status=CallStatus.ERROR.value)
         assert len(results) == 1
         assert results[0].action == "query"
 
     def test_filter_by_action(self, populated_store):
-    """Test: filter by action."""
+        """Test: filter by action."""
         results = populated_store.search_calls(action="fetch")
         assert len(results) == 2
 
     def test_filter_by_min_duration(self, populated_store):
-    """Test: filter by min duration."""
+        """Test: filter by min duration."""
         results = populated_store.search_calls(min_duration_ms=1000.0)
         assert len(results) == 2  # 2500ms and 3500ms
 
     def test_filter_by_max_duration(self, populated_store):
-    """Test: filter by max duration."""
+        """Test: filter by max duration."""
         # Durations: 120.5, 2500, 800, 95, 3500, 150
         # <= 200: 120.5, 95, 150 → 3 results
         results = populated_store.search_calls(max_duration_ms=200.0)
         assert len(results) == 3
 
     def test_combined_filters(self, populated_store):
-    """Test: combined filters."""
+        """Test: combined filters."""
         results = populated_store.search_calls(
             agent_id="agent-1", tool_id="http", min_duration_ms=500.0
         )
@@ -160,12 +160,12 @@ class TestSearchCalls:
         assert results[0].action == "post"
 
     def test_limit(self, populated_store):
-    """Test: limit."""
+        """Test: limit."""
         results = populated_store.search_calls(limit=2)
         assert len(results) == 2
 
     def test_no_match_returns_empty(self, populated_store):
-    """Test: no match returns empty."""
+        """Test: no match returns empty."""
         results = populated_store.search_calls(agent_id="nonexistent")
         assert results == []
 
@@ -176,7 +176,7 @@ class TestSearchCalls:
             assert results[i].called_at >= results[i + 1].called_at
 
     def test_no_filters_returns_all(self, populated_store):
-    """Test: no filters returns all."""
+        """Test: no filters returns all."""
         results = populated_store.search_calls()
         assert len(results) == 6
 
@@ -186,7 +186,7 @@ class TestSearchCalls:
 class TestHealthCheck:
     """TestHealthCheck."""
     def test_empty_store(self):
-    """Test: empty store."""
+        """Test: empty store."""
         store = NexusStore()
         health = store.health_check()
         assert health["status"] == "healthy"
@@ -195,7 +195,7 @@ class TestHealthCheck:
         assert health["plugins"] == 0
 
     def test_with_data(self, populated_store):
-    """Test: with data."""
+        """Test: with data."""
         health = populated_store.health_check()
         assert health["status"] == "healthy"
         assert health["agents"] == 2
@@ -206,7 +206,7 @@ class TestHealthCheck:
         assert health["memory_usage_approx_bytes"] > 0
 
     def test_returns_required_keys(self, populated_store):
-    """Test: returns required keys."""
+        """Test: returns required keys."""
         health = populated_store.health_check()
         required = {"status", "agents", "plugins", "bindings", "calls",
                     "calls_capacity", "workflows", "audit_events",
@@ -219,7 +219,7 @@ class TestHealthCheck:
 class TestTopTools:
     """TestTopTools."""
     def test_returns_ranked_list(self, populated_store):
-    """Test: returns ranked list."""
+        """Test: returns ranked list."""
         metrics = UsageMetrics(populated_store)
         top = metrics.top_tools(n=5)
         assert len(top) == 3  # Only 3 unique tools
@@ -228,7 +228,7 @@ class TestTopTools:
         assert top[0]["calls"] == 3
 
     def test_includes_avg_duration(self, populated_store):
-    """Test: includes avg duration."""
+        """Test: includes avg duration."""
         metrics = UsageMetrics(populated_store)
         top = metrics.top_tools()
         http_entry = next(t for t in top if t["tool_id"] == "http")
@@ -236,7 +236,7 @@ class TestTopTools:
         assert http_entry["avg_duration_ms"] > 0
 
     def test_includes_error_rate(self, populated_store):
-    """Test: includes error rate."""
+        """Test: includes error rate."""
         metrics = UsageMetrics(populated_store)
         top = metrics.top_tools()
         db_entry = next(t for t in top if t["tool_id"] == "database")
@@ -244,13 +244,13 @@ class TestTopTools:
         assert db_entry["error_rate"] == 0.5
 
     def test_n_limits_results(self, populated_store):
-    """Test: n limits results."""
+        """Test: n limits results."""
         metrics = UsageMetrics(populated_store)
         top = metrics.top_tools(n=2)
         assert len(top) == 2
 
     def test_empty_store(self):
-    """Test: empty store."""
+        """Test: empty store."""
         store = NexusStore()
         metrics = UsageMetrics(store)
         assert metrics.top_tools() == []
@@ -261,27 +261,27 @@ class TestTopTools:
 class TestSlowCalls:
     """TestSlowCalls."""
     def test_returns_slow_only(self, populated_store):
-    """Test: returns slow only."""
+        """Test: returns slow only."""
         metrics = UsageMetrics(populated_store)
         slow = metrics.slow_calls(threshold_ms=2000.0)
         assert len(slow) == 2  # 2500ms and 3500ms
         assert all(s["duration_ms"] >= 2000.0 for s in slow)
 
     def test_sorted_by_duration_desc(self, populated_store):
-    """Test: sorted by duration desc."""
+        """Test: sorted by duration desc."""
         metrics = UsageMetrics(populated_store)
         slow = metrics.slow_calls(threshold_ms=100.0)
         for i in range(len(slow) - 1):
             assert slow[i]["duration_ms"] >= slow[i + 1]["duration_ms"]
 
     def test_limit(self, populated_store):
-    """Test: limit."""
+        """Test: limit."""
         metrics = UsageMetrics(populated_store)
         slow = metrics.slow_calls(threshold_ms=0.0, limit=3)
         assert len(slow) == 3
 
     def test_includes_required_fields(self, populated_store):
-    """Test: includes required fields."""
+        """Test: includes required fields."""
         metrics = UsageMetrics(populated_store)
         slow = metrics.slow_calls(threshold_ms=3500.0)
         assert len(slow) == 1
@@ -301,7 +301,7 @@ class TestSlowCalls:
         assert all(s["duration_ms"] >= 1000.0 for s in slow)
 
     def test_empty_store(self):
-    """Test: empty store."""
+        """Test: empty store."""
         store = NexusStore()
         metrics = UsageMetrics(store)
         assert metrics.slow_calls() == []
@@ -312,18 +312,18 @@ class TestSlowCalls:
 class TestHealthEndpoint:
     """TestHealthEndpoint."""
     def test_returns_200(self, client):
-    """Test: returns 200."""
+        """Test: returns 200."""
         response = client.get("/health")
         assert response.status_code == 200
 
     def test_returns_json(self, client):
-    """Test: returns json."""
+        """Test: returns json."""
         response = client.get("/health")
         data = response.json()
         assert data["status"] == "healthy"
 
     def test_after_init_has_plugins(self, client):
-    """Test: after init has plugins."""
+        """Test: after init has plugins."""
         response = client.get("/health")
         data = response.json()
         # After /init, built-in plugins are installed

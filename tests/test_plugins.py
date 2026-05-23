@@ -55,11 +55,11 @@ def test_install_single_builtin():
 def test_plugin_sdk_global_registration():
     """Test: plugin sdk global registration."""
     class SamplePlugin(BasePlugin):
-    """SamplePlugin."""
+        """SamplePlugin."""
         metadata = PluginMetadata("sample", "Sample", "desc", "1", "library", ["sample.read"])
 
         def execute(self, action, params):
-    """execute."""
+            """execute."""
             return {"ok": True}
 
     register(SamplePlugin())
