@@ -276,12 +276,6 @@ def create_app() -> FastAPI:
                 code="INTERNAL_ERROR",
             ).model_dump(),
         )
-    async def bad_request_handler(request: Request, exc: ValueError) -> JSONResponse:
-        """Handle ValueError exceptions, returning a structured 400 JSON response."""
-        return JSONResponse(
-            status_code=400,
-            content=ErrorResponse(error="bad_request", detail=str(exc), code="BAD_REQUEST").model_dump(),
-        )
 
     @app.post("/init")
     async def init() -> dict[str, Any]:
