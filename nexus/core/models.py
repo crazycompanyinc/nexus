@@ -204,6 +204,24 @@ class ToolCall:
     def __repr__(self) -> str:
         return f"ToolCall(id={self.id[:8]}…, agent={self.agent_id!r}, tool={self.tool_id!r}, action={self.action!r}, status={self.status!r}, dur={self.duration_ms:.1f}ms)"
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dict with ISO 8601 timestamps.
+
+        Returns:
+            A dict representation suitable for JSON serialization.
+        """
+        return {
+            "id": self.id,
+            "agent_id": self.agent_id,
+            "tool_id": self.tool_id,
+            "action": self.action,
+            "params": dict(self.params),
+            "result": self.result,
+            "duration_ms": self.duration_ms,
+            "status": self.status,
+            "called_at": self.called_at.isoformat(),
+        }
+
 
 @dataclass(slots=True)
 class WorkflowStep:
