@@ -260,7 +260,7 @@ class TestValueErrorHandler:
         assert resp.status_code == 400
         data = resp.json()
         assert data["error"] == "bad_request"
-        assert data["code"] == "BAD_REQUEST"
+        assert data["code"] == "INVALID_INPUT"
 
 
 class TestVersionBumped:
