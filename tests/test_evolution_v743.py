@@ -20,10 +20,10 @@ def client() -> TestClient:
     app = create_app()
     c = TestClient(app)
     c.post("/init")
-    # Grant agent-1 permission to use tools
-    c.post("/agents/agent-1/permissions", json={
+    # Grant agent-1 admin permission on the http plugin (no auth required)
+    c.post("/bindings", json={
         "agent_id": "agent-1",
-        "tool_id": "*",
+        "tool_id": "http",
         "level": "admin",
     })
     return c
@@ -72,31 +72,37 @@ class TestBatchCall:
         assert data["succeeded"] == 0
         assert data["failed"] == 0
 
+    def test_single_call_batch(self, client):
+        payload = [{"agent_id": "agent-1", "tool_id": "http", "action": "info", "params": {}}]
+        response = client.post("/tools/batch", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["results"]) == 1
+
     def test_batch_returns_duration(self, client):
         payload = [{"agent_id": "agent-1", "tool_id": "http", "action": "info", "params": {}}]
         response = client.post("/tools/batch", json=payload)
-        # Should be 200 (or 403 if permission denied, but fixture grants admin)
-        if response.status_code == 200:
-            data = response.json()
-            for result in data["results"]:
-                assert "duration_ms" in result
+        assert response.status_code == 200
+        data = response.json()
+        for result in data["results"]:
+            assert "duration_ms" in result
 
     def test_batch_multiple_calls(self, client):
         payload = [
             {"agent_id": "agent-1", "tool_id": "http", "action": "info", "params": {}},
-            {"agent_id": "agent-1", "tool_id": "database", "action": "info", "params": {}},
+            {"agent_id": "agent-1", "tool_id": "http", "action": "status", "params": {}},
         ]
         response = client.post("/tools/batch", json=payload)
-        if response.status_code == 200:
-            data = response.json()
-            assert len(data["results"]) == 2
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["results"]) == 2
 
     def test_batch_succeeded_count(self, client):
         payload = [{"agent_id": "agent-1", "tool_id": "http", "action": "info", "params": {}}]
         response = client.post("/tools/batch", json=payload)
-        if response.status_code == 200:
-            data = response.json()
-            assert data["succeeded"] + data["failed"] == len(data["results"])
+        assert response.status_code == 200
+        data = response.json()
+        assert data["succeeded"] + data["failed"] == len(data["results"])
 
 
 # ── Graceful Shutdown (Lifespan) ──────────────────────────────────────
