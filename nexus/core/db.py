@@ -279,6 +279,11 @@ class NexusStore:
         return results
 
     def __repr__(self) -> str:
+        """Return a summary of the store's current contents.
+
+        Returns:
+            String with counts of agents, plugins, bindings, calls, workflows, and audit events.
+        """
         return (
             f"NexusStore(agents={len(self.agents)}, plugins={len(self.plugins)}, "
             f"bindings={len(self.bindings)}, calls={len(self.calls)}/{self._max_calls}, "

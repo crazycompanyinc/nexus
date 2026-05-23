@@ -40,6 +40,11 @@ class CorrelationFilter(logging.Filter):
     """
 
     def __init__(self, component: str = "nexus") -> None:
+        """Initialize the correlation filter with a component name.
+
+        Args:
+            component: Name to inject into log records (e.g. 'nexus.api').
+        """
         super().__init__()
         self.component = component
 
