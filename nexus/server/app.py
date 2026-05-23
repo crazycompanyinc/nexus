@@ -257,6 +257,25 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(ValueError)
+    async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+        """Handle ValueError exceptions, returning a structured 400 JSON response."""
+        return JSONResponse(
+            status_code=400,
+            content=ErrorResponse(error="bad_request", detail=str(exc), code="INVALID_INPUT").model_dump(),
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        """Catch-all handler for unhandled exceptions, returning a structured 500 JSON response."""
+        request_id = getattr(request.state, "request_id", "unknown")
+        return JSONResponse(
+            status_code=500,
+            content=ErrorResponse(
+                error="internal_server_error",
+                detail=f"An unexpected error occurred. Request ID: {request_id}",
+                code="INTERNAL_ERROR",
+            ).model_dump(),
+        )
     async def bad_request_handler(request: Request, exc: ValueError) -> JSONResponse:
         """Handle ValueError exceptions, returning a structured 400 JSON response."""
         return JSONResponse(
