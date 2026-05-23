@@ -196,6 +196,11 @@ class UsageMetrics:
         ]
 
     def __repr__(self) -> str:
+        """Return a summary of usage metrics.
+
+        Returns:
+            String with total calls, error count, and agent count.
+        """
         total = len(self.store.calls)
         errors = sum(1 for c in self.store.calls if c.status == "error")
         return f"UsageMetrics(total_calls={total}, errors={errors}, agents={len(self.store.agents)})"
