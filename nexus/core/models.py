@@ -114,6 +114,11 @@ class ToolPlugin:
         return action in self.capabilities or "*" in self.capabilities
 
     def __repr__(self) -> str:
+        """Return a concise developer-friendly representation.
+
+        Returns:
+            String with id, name, type, and status fields.
+        """
         return f"ToolPlugin(id={self.id!r}, name={self.name!r}, type={self.plugin_type!r}, status={self.status!r})"
 
     def to_dict(self) -> dict[str, Any]:
@@ -158,6 +163,11 @@ class AgentToolBinding:
     bound_at: datetime = field(default_factory=utcnow)
 
     def __repr__(self) -> str:
+        """Return a concise developer-friendly representation.
+
+        Returns:
+            String with agent_id, tool_id, and permissions fields.
+        """
         return f"AgentToolBinding(agent={self.agent_id!r}, tool={self.tool_id!r}, perm={self.permissions!r})"
 
     def to_dict(self) -> dict[str, Any]:
@@ -202,6 +212,11 @@ class ToolCall:
     called_at: datetime = field(default_factory=utcnow)
 
     def __repr__(self) -> str:
+        """Return a concise developer-friendly representation.
+
+        Returns:
+            String with id prefix, agent, tool, action, status, and duration.
+        """
         return f"ToolCall(id={self.id[:8]}…, agent={self.agent_id!r}, tool={self.tool_id!r}, action={self.action!r}, status={self.status!r}, dur={self.duration_ms:.1f}ms)"
 
     def to_dict(self) -> dict[str, Any]:
@@ -246,6 +261,11 @@ class WorkflowStep:
     retry_delay_ms: float = 100.0
 
     def __repr__(self) -> str:
+        """Return a concise developer-friendly representation.
+
+        Returns:
+            String with tool_id, action, and max_retries fields.
+        """
         return f"WorkflowStep(tool={self.tool_id!r}, action={self.action!r}, retries={self.max_retries})"
 
     def to_dict(self) -> dict[str, Any]:
