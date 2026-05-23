@@ -154,6 +154,41 @@ class PluginMetadata:
         """
         return json.dumps(self.to_dict(), **kwargs)
 
+    @classmethod
+    def from_model(cls, model: ToolPlugin) -> PluginMetadata:
+        """Reconstruct PluginMetadata from a ToolPlugin model.
+
+        This is the inverse of ``to_model()`` — useful when loading
+        persisted ToolPlugin records back into SDK metadata objects.
+
+        Args:
+            model: A ToolPlugin instance to convert.
+
+        Returns:
+            A new PluginMetadata instance.
+
+        Example:
+            >>> model = ToolPlugin(id="x", name="X", description="d",
+            ...     version="1.0.0", plugin_type="api", capabilities=["read"])
+            >>> meta = PluginMetadata.from_model(model)
+            >>> meta.id
+            'x'
+        """
+        return cls(
+            id=model.id,
+            name=model.name,
+            description=model.description,
+            version=model.version,
+            plugin_type=model.plugin_type,
+            capabilities=list(model.capabilities),
+            endpoint=model.endpoint,
+            auth_required=model.auth_required,
+            auth_type=model.auth_type,
+            config_schema=dict(model.config_schema),
+            health_check_endpoint=model.health_check_endpoint,
+            status=model.status,
+        )
+
 
 class Plugin(Protocol):
     """Protocol that all Nexus plugins must implement.
