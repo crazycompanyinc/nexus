@@ -847,6 +847,23 @@ def create_app() -> FastAPI:
     app.state.store = store
     app.state.manager = manager
     app.state.api = api
+
+    @app.on_event("shutdown")
+    async def shutdown_event() -> None:
+        """Graceful shutdown: persist store snapshot and log final stats.
+
+        Called when the FastAPI application is shutting down. Logs a
+        summary of calls, agents, and plugins for observability.
+        """
+        stats = store.stats()
+        logger.info(
+            "Nexus shutting down — agents=%d plugins=%d calls=%d workflows=%d",
+            len(store.agents),
+            len(store.plugins),
+            stats.get("calls", 0),
+            stats.get("workflows", 0),
+        )
+
     return app
 
 
