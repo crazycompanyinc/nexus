@@ -286,6 +286,15 @@ def create_app() -> FastAPI:
         """
         return {"plugins": [plugin.id for plugin in manager.install_all_builtins()]}
 
+    @app.get("/health", tags=["System"])
+    async def health() -> dict[str, Any]:
+        """Return the health status of the Nexus store.
+
+        Returns:
+            Health check dict from NexusStore.health_check().
+        """
+        return store.health_check()
+
     @app.get("/plugins", tags=["Plugins"])
     async def plugins(
         offset: int = Query(0, ge=0),
