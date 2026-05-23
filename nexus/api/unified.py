@@ -45,8 +45,8 @@ class UnifiedToolAPI:
             retry_base_delay: Base delay in seconds for exponential backoff (>= 0.0).
         """
         self.store = store or NexusStore()
-        self.plugins = plugin_manager or PluginManager(self.store)
-        self.access = access_control or AccessControl(self.store)
+        self.plugins = plugin_manager if plugin_manager is not None else PluginManager(self.store)
+        self.access = access_control if access_control is not None else AccessControl(self.store)
         self.max_retries = max(max_retries, 0)
         self.retry_base_delay = max(retry_base_delay, 0.0)
 
