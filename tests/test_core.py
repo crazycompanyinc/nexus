@@ -235,3 +235,128 @@ def test_unified_api_repr():
     assert "UnifiedToolAPI" in r
     assert "max_retries=5" in r
     assert "retry_base_delay=0.5" in r
+
+
+def test_store_health_check():
+    store = NexusStore()
+    store.register_agent("a1")
+    store.upsert_plugin(ToolPlugin("p1", "P1", "desc", "1", "api", ["read"]))
+    store.bind_tool(AgentToolBinding("a1", "p1", "read"))
+    store.record_call(ToolCall("a1", "p1", "read", {}))
+    store.save_workflow(Workflow("w1", "wf", "desc", [WorkflowStep("p1", "read")]))
+    store.audit("test.event")
+
+    health = store.health_check()
+    assert health["status"] == "healthy"
+    assert health["agents"] == 1
+    assert health["plugins"] == 1
+    assert health["bindings"] == 1
+    assert health["calls"] == 1
+    assert health["calls_capacity"] == 10000
+    assert health["workflows"] == 1
+    assert health["audit_events"] == 1
+    assert health["audit_capacity"] == 5000
+    assert "memory_usage_approx_bytes" in health
+    assert health["memory_usage_approx_bytes"] >= 0
+
+
+def test_store_health_check_empty():
+    store = NexusStore()
+    health = store.health_check()
+    assert health["status"] == "healthy"
+    assert health["agents"] == 0
+    assert health["calls"] == 0
+    assert health["memory_usage_approx_bytes"] == 0
+
+
+def test_store_search_calls():
+    store = NexusStore()
+    store.record_call(ToolCall("a1", "p1", "read", {}, duration_ms=10.0))
+    store.record_call(ToolCall("a1", "p1", "write", {}, duration_ms=50.0))
+    store.record_call(ToolCall("a1", "p2", "fetch", {}, duration_ms=200.0))
+    store.record_call(ToolCall("a2", "p1", "read", {}, duration_ms=30.0))
+
+    # Filter by agent
+    results = store.search_calls(agent_id="a2")
+    assert len(results) == 1
+    assert results[0].agent_id == "a2"
+
+    # Filter by tool
+    results = store.search_calls(tool_id="p2")
+    assert len(results) == 1
+    assert results[0].tool_id == "p2"
+
+    # Filter by action
+    results = store.search_calls(action="write")
+    assert len(results) == 1
+    assert results[0].action == "write"
+
+    # Filter by duration range
+    results = store.search_calls(min_duration_ms=20.0, max_duration_ms=100.0)
+    assert len(results) == 2
+
+    # Filter with limit
+    results = store.search_calls(agent_id="a1", limit=2)
+    assert len(results) == 2
+
+    # Combined filters
+    results = store.search_calls(agent_id="a1", tool_id="p1", action="read")
+    assert len(results) == 1
+    assert results[0].action == "read"
+
+
+def test_store_search_calls_reverse_chronological():
+    store = NexusStore()
+    store.record_call(ToolCall("a1", "p1", "first", {}))
+    store.record_call(ToolCall("a1", "p1", "second", {}))
+    store.record_call(ToolCall("a1", "p1", "third", {}))
+
+    results = store.search_calls(agent_id="a1")
+    assert len(results) == 3
+    assert results[0].action == "third"
+    assert results[2].action == "first"
+
+
+def test_workflow_step_result_bool():
+    from nexus.composition.workflow import StepResult
+    ok = StepResult(step_index=0, tool_id="p1", action="read", success=True)
+    fail = StepResult(step_index=1, tool_id="p1", action="write", success=False)
+
+    assert bool(ok) is True
+    assert bool(fail) is False
+    assert ok  # truthy
+    assert not fail  # falsy
+
+
+def test_workflow_step_result_repr():
+    from nexus.composition.workflow import StepResult
+    ok = StepResult(step_index=0, tool_id="p1", action="read", success=True, duration_ms=42.5)
+    fail = StepResult(step_index=1, tool_id="p2", action="write", success=False, duration_ms=10.0)
+
+    assert "#0" in repr(ok)
+    assert "p1.read" in repr(ok)
+    assert "ok" in repr(ok)
+    assert "42.5ms" in repr(ok)
+
+    assert "#1" in repr(fail)
+    assert "p2.write" in repr(fail)
+    assert "FAIL" in repr(fail)
+
+
+def test_workflow_builder_repr():
+    from nexus.composition.workflow import WorkflowBuilder
+    store = NexusStore()
+    builder = WorkflowBuilder(store)
+    assert "workflows=0" in repr(builder)
+
+    builder.create("test", [{"tool_id": "p1", "action": "read"}], "admin")
+    assert "workflows=1" in repr(builder)
+
+
+def test_workflow_builder_len():
+    from nexus.composition.workflow import WorkflowBuilder
+    store = NexusStore()
+    builder = WorkflowBuilder(store)
+    assert len(builder) == 0
+    builder.create("test", [{"tool_id": "p1", "action": "read"}], "admin")
+    assert len(builder) == 1
