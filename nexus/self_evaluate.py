@@ -65,15 +65,30 @@ class EvalReport:
 
     @property
     def total_score(self) -> float:
+        """The average score across all evaluation dimensions.
+
+        Returns:
+            Float average of all result scores, or 0.0 if no results.
+        """
         if not self.results:
             return 0.0
         return sum(r.score for r in self.results) / len(self.results)
 
     @property
     def all_passed(self) -> bool:
+        """Whether every evaluation dimension passed.
+
+        Returns:
+            True if all results have passing scores.
+        """
         return all(r.passed for r in self.results)
 
     def summary(self) -> str:
+        """Generate a formatted multi-line summary of the evaluation report.
+
+        Returns:
+            Formatted string with scores, issues, and recommendations per dimension.
+        """
         lines = [
             "=" * 60,
             "🧪 NEXUS SELF-EVALUATION REPORT",
@@ -96,6 +111,11 @@ class EvalReport:
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the evaluation report to a JSON-serializable dict.
+
+        Returns:
+            Dict with project_path, total_score, all_passed, and results list.
+        """
         return {
             "project_path": self.project_path,
             "total_score": round(self.total_score, 1),
@@ -118,6 +138,11 @@ class NexusSelfEvaluator:
     """Evaluador automático de calidad para el proyecto Nexus."""
 
     def __init__(self, project_path: str = "/root/nexus") -> None:
+        """Initialize the self-evaluator for a project directory.
+
+        Args:
+            project_path: Path to the project root to evaluate.
+        """
         self.project_path = Path(project_path)
         self._py_files: list[Path] | None = None
 
