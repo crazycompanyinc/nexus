@@ -135,11 +135,10 @@ class TestSearchCalls:
         assert len(results) == 2  # 2500ms and 3500ms
 
     def test_filter_by_max_duration(self, populated_store):
-        results = populated_store.search_calls(max_duration_ms=200.0)
-        assert len(results) == 2  # 120.5ms and 95.0ms (not 150ms which is >200? no, 150<200)
-        # Actually: 120.5, 95.0, 150.0 are all <= 200.0 → 3 results
-        # Let me recount: calls are 120.5, 2500, 800, 95, 3500, 150
+        # Durations: 120.5, 2500, 800, 95, 3500, 150
         # <= 200: 120.5, 95, 150 → 3 results
+        results = populated_store.search_calls(max_duration_ms=200.0)
+        assert len(results) == 3
 
     def test_combined_filters(self, populated_store):
         results = populated_store.search_calls(
