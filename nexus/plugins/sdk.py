@@ -134,10 +134,10 @@ class Plugin(Protocol):
         ...
 
 
-class BasePlugin:
+class BasePlugin(ABC):
     """Base class for plugins providing default capability and health methods.
 
-    Subclasses should override metadata and implement execute().
+    Subclasses must override ``metadata`` and implement ``execute()``.
     """
 
     metadata = PluginMetadata(
@@ -157,17 +157,15 @@ class BasePlugin:
         """
         return list(self.metadata.capabilities)
 
+    @abstractmethod
     def execute(self, action: str, params: dict[str, Any]) -> Any:
         """Execute an action — must be implemented by subclasses.
 
         Args:
             action: The action to perform.
             params: Parameters for the action.
-
-        Raises:
-            NotImplementedError: Always, unless overridden by subclass.
         """
-        raise NotImplementedError(f"{self.metadata.id} does not implement {action}")
+        ...
 
     def health(self) -> dict[str, Any]:
         """Return basic health status.
