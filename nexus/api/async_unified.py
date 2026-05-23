@@ -48,6 +48,11 @@ class AsyncUnifiedToolAPI:
         self.retry_base_delay = max(retry_base_delay, 0.0)
 
     def __repr__(self) -> str:
+        """Return a summary of the async API's current state.
+
+        Returns:
+            String with agent count, plugin count, call count, and retry config.
+        """
         return (
             f"AsyncUnifiedToolAPI(agents={len(self.store.agents)}, "
             f"plugins={len(self.store.plugins)}, "
