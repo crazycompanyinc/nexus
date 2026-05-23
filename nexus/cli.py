@@ -25,6 +25,10 @@ class Runtime:
     """
 
     def __init__(self) -> None:
+        """Initialize the runtime with store, plugin manager, API, and workflow components.
+
+        Creates all shared Nexus components with default configuration.
+        """
         self.store = NexusStore()
         self.manager = PluginManager(self.store)
         self.api = UnifiedToolAPI(self.store, self.manager, AccessControl(self.store))
