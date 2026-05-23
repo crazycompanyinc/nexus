@@ -61,6 +61,11 @@ class PermissionModel:
         return self.ORDER[granted] >= self.ORDER[required]
 
     def __repr__(self) -> str:
+        """Return a summary of the permission model configuration.
+
+        Returns:
+            String with the number of levels and mapped actions.
+        """
         return (
             f"PermissionModel(levels={len(self.ORDER)}, "
             f"actions={len(self.ACTION_REQUIREMENTS)})"
