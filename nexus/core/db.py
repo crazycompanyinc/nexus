@@ -301,6 +301,23 @@ class NexusStore:
                 break
         return results
 
+    def agent_bindings(self, agent_id: str) -> list[AgentToolBinding]:
+        """Return all tool bindings for a specific agent.
+
+        Args:
+            agent_id: The agent identifier to look up.
+
+        Returns:
+            List of AgentToolBinding objects for the agent, ordered by
+            the insertion order in the bindings dict.
+
+        Example:
+            >>> bindings = store.agent_bindings("agent-1")
+            >>> for b in bindings:
+            ...     print(b.tool_id, b.permissions)
+        """
+        return [b for b in self.bindings.values() if b.agent_id == agent_id]
+
     def __repr__(self) -> str:
         """Return a summary of the store's current contents.
 
