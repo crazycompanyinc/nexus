@@ -37,6 +37,11 @@ class CapabilityRegistry:
         return [tool_id for tool_id, actions in self.all().items() if capability in actions]
 
     def __repr__(self) -> str:
+        """Return a summary of registered tools and total capabilities.
+
+        Returns:
+            String with tool count and total capability count.
+        """
         caps = self.all()
         return f"CapabilityRegistry(tools={len(caps)}, capabilities={sum(len(v) for v in caps.values())})"
 
@@ -45,6 +50,11 @@ class ToolDiscovery:
     """Discovers available tools and their capabilities from the plugin manager."""
 
     def __init__(self, manager: PluginManager) -> None:
+        """Initialize tool discovery with a plugin manager.
+
+        Args:
+            manager: PluginManager instance to discover tools from.
+        """
         self.manager = manager
         self.capabilities = CapabilityRegistry(manager)
 
