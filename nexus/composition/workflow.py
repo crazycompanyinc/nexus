@@ -237,6 +237,14 @@ class WorkflowBuilder:
     def __repr__(self) -> str:
         return f"WorkflowBuilder(workflows={len(self.store.workflows)})"
 
+    def __len__(self) -> int:
+        """Return the number of stored workflows.
+
+        Returns:
+            Integer count of workflows in the store.
+        """
+        return len(self.store.workflows)
+
 
 @dataclass(slots=True)
 class StepResult:

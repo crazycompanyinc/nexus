@@ -104,7 +104,7 @@ class AccessControl:
         Returns:
             List of AgentToolBinding objects for the agent.
         """
-        return [binding for binding in self.store.bindings.values() if binding.agent_id == agent_id]
+        return self.store.agent_bindings(agent_id)
 
     def is_admin(self, agent_id: str, tool_id: str) -> bool:
         """Check if an agent has admin-level access to a tool.
