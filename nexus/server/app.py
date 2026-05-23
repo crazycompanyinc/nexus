@@ -715,6 +715,33 @@ def create_app() -> FastAPI:
         from nexus.metrics.performance import PerformanceTracker
         return PerformanceTracker(store).by_tool()
 
+    @app.get("/metrics/summary", tags=["Metrics"])
+    async def metrics_summary() -> dict[str, Any]:
+        """Unified metrics dashboard summary.
+
+        Returns a single response combining usage stats, top tools,
+        error summary, store health, and plugin status.
+
+        Returns:
+            A dict with keys: usage, top_tools, errors, store, plugins.
+        """
+        from nexus.metrics.performance import PerformanceTracker
+        metrics = UsageMetrics(store)
+        tracker = PerformanceTracker(store)
+        plugins = manager.list_plugins()
+        return {
+            "usage": metrics.summary(),
+            "top_tools": metrics.top_tools(5),
+            "errors": metrics.error_summary(),
+            "performance": tracker.latency(),
+            "store": store.stats(),
+            "plugins": {
+                "total": len(plugins),
+                "active": sum(1 for p in plugins if p.status == "active"),
+                "error": sum(1 for p in plugins if p.status == "error"),
+            },
+        }
+
     @app.get("/agents/{agent_id}/calls", tags=["Agents"])
     async def agent_calls(
         agent_id: str,
