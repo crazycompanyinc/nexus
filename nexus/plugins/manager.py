@@ -224,3 +224,11 @@ class PluginManager:
             f"PluginManager(plugins={len(plugins)}, active={active}, "
             f"error={len(plugins) - active})"
         )
+
+    def __len__(self) -> int:
+        """Return the number of registered plugins.
+
+        Returns:
+            Integer count of registered plugins.
+        """
+        return len(self.registry.metadata())
