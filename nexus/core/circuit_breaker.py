@@ -169,6 +169,11 @@ class CircuitBreaker:
         self._last_failure_time = 0.0
 
     def __repr__(self) -> str:
+        """Return a summary of the circuit breaker's current state.
+
+        Returns:
+            String with state, failure count/threshold, and recovery timeout.
+        """
         return (
             f"CircuitBreaker(state={self.state.value}, "
             f"failures={self._failure_count}/{self.failure_threshold}, "
