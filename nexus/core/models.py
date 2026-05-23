@@ -379,18 +379,7 @@ class Workflow:
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "steps": [
-                {
-                    "tool_id": s.tool_id,
-                    "action": s.action,
-                    "params": dict(s.params),
-                    "condition": s.condition,
-                    "fallback_tools": list(s.fallback_tools),
-                    "max_retries": s.max_retries,
-                    "retry_delay_ms": s.retry_delay_ms,
-                }
-                for s in self.steps
-            ],
+            "steps": [s.to_dict() for s in self.steps],
             "trigger": self.trigger,
             "status": self.status,
             "created_by": self.created_by,
