@@ -472,3 +472,81 @@ class NexusStore:
                 return value.to_dict()
             return asdict(value)
         return value
+
+    def search_calls(
+        self,
+        *,
+        agent_id: str | None = None,
+        tool_id: str | None = None,
+        action: str | None = None,
+        status: str | None = None,
+        min_duration_ms: float | None = None,
+        max_duration_ms: float | None = None,
+        limit: int | None = None,
+    ) -> list[ToolCall]:
+        """Search and filter tool calls with multiple optional criteria.
+
+        All parameters are optional and combined with AND logic.
+        Results are returned in reverse chronological order (most recent first).
+
+        Args:
+            agent_id: Filter by agent identifier.
+            tool_id: Filter by tool identifier.
+            action: Filter by action name.
+            status: Filter by call status (e.g. 'success', 'error').
+            min_duration_ms: Minimum duration in ms (inclusive).
+            max_duration_ms: Maximum duration in ms (inclusive).
+            limit: Maximum number of results to return.
+
+        Returns:
+            List of ToolCall instances matching all specified criteria.
+
+        Example:
+            >>> calls = store.search_calls(agent_id="agent-1", status="error", limit=10)
+        """
+        results: list[ToolCall] = []
+        for call in reversed(self.calls):
+            if agent_id is not None and call.agent_id != agent_id:
+                continue
+            if tool_id is not None and call.tool_id != tool_id:
+                continue
+            if action is not None and call.action != action:
+                continue
+            if status is not None and call.status != status:
+                continue
+            if min_duration_ms is not None and call.duration_ms < min_duration_ms:
+                continue
+            if max_duration_ms is not None and call.duration_ms > max_duration_ms:
+                continue
+            results.append(call)
+            if limit is not None and len(results) >= limit:
+                break
+        return results
+
+    def health_check(self) -> dict[str, Any]:
+        """Return a health summary of the store for monitoring.
+
+        Returns:
+            Dict with keys: status, agents, plugins, bindings, calls,
+            workflows, audit_events, memory_usage_approx_bytes.
+
+        Example:
+            >>> health = store.health_check()
+            >>> health["status"]
+            'healthy'
+        """
+        import sys as _sys
+        calls_bytes = sum(_sys.getsizeof(c) for c in self.calls)
+        audit_bytes = sum(_sys.getsizeof(a) for a in self.audit_events)
+        return {
+            "status": "healthy",
+            "agents": len(self.agents),
+            "plugins": len(self.plugins),
+            "bindings": len(self.bindings),
+            "calls": len(self.calls),
+            "calls_capacity": self._max_calls,
+            "workflows": len(self.workflows),
+            "audit_events": len(self.audit_events),
+            "audit_capacity": self._max_audit,
+            "memory_usage_approx_bytes": calls_bytes + audit_bytes,
+        }
