@@ -373,6 +373,20 @@ class Pipeline:
         return results
 
     def _resolve_params(self, params: dict[str, Any], results: list[Any]) -> dict[str, Any]:
+        """Resolve parameter references against previous step results.
+
+        Supports three reference types:
+        - $previous: Replaced with the last successful step result.
+        - $all: Replaced with a list of all successful step results.
+        - $step{N}: Replaced with the result of step N (zero-based).
+
+        Args:
+            params: The step parameters, possibly containing reference strings.
+            results: List of results from previously executed steps.
+
+        Returns:
+            A new dict with all references resolved to their actual values.
+        """
         import re
         resolved = dict(params)
         if "$previous" in resolved:

@@ -6,6 +6,13 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class HTTPPlugin(BasePlugin):
+    """Generic HTTP/REST API caller plugin.
+
+    Supports GET, POST, PUT, and DELETE operations against any URL.
+    Does not require authentication by default.
+
+    Capabilities: request.get, request.post, request.put, request.delete.
+    """
     metadata = PluginMetadata(
         id="http",
         name="HTTP",

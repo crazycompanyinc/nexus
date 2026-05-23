@@ -6,6 +6,13 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class GitHubPlugin(BasePlugin):
+    """GitHub plugin for repository, PR, issue, and CI management.
+
+    Provides token-authenticated access to GitHub API operations including
+    repository listing, pull request management, issue tracking, and CI status.
+
+    Capabilities: repos.list, prs.list, issues.list, ci.status, prs.create.
+    """
     metadata = PluginMetadata(
         id="github",
         name="GitHub",

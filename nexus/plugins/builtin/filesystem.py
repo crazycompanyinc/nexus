@@ -26,6 +26,7 @@ class FileSystemPlugin(BasePlugin):
     )
 
     def __init__(self) -> None:
+        """Initialize the FileSystemPlugin with a default README.md file."""
         self.files = {"README.md": "# Nexus\n"}
 
     def execute(self, action: str, params: dict[str, Any]) -> Any:
