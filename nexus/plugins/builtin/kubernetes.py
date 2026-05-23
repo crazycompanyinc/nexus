@@ -6,6 +6,13 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class KubernetesPlugin(BasePlugin):
+    """Kubernetes plugin for pod, service, and deployment management.
+
+    Supports listing pods, services, and deployments, as well as
+    restarting deployments. No explicit authentication (uses kubeconfig).
+
+    Capabilities: pods.list, services.list, deployments.list, deployments.restart.
+    """
     metadata = PluginMetadata(
         id="kubernetes",
         name="Kubernetes",

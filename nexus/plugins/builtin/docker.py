@@ -6,6 +6,13 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class DockerPlugin(BasePlugin):
+    """Docker plugin for container and image management.
+
+    Provides operations for listing containers and images, as well as
+    Docker Compose up/down orchestration. No authentication required.
+
+    Capabilities: containers.list, images.list, compose.up, compose.down.
+    """
     metadata = PluginMetadata(
         id="docker",
         name="Docker",

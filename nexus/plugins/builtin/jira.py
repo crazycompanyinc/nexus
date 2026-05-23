@@ -6,6 +6,13 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class JiraPlugin(BasePlugin):
+    """Jira plugin for ticket, sprint, and board management.
+
+    Provides capabilities for creating/updating tickets, listing sprints,
+    and querying boards. Requires token-based authentication.
+
+    Capabilities: tickets.create, tickets.update, tickets.list, sprints.list, boards.list.
+    """
     metadata = PluginMetadata(
         id="jira",
         name="Jira",

@@ -6,6 +6,14 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class AWSPlugin(BasePlugin):
+    """AWS plugin for EC2, S3, Lambda, and CloudWatch operations.
+
+    Provides IAM-authenticated access to core AWS services including
+    EC2 instance listing, S3 bucket listing, Lambda invocation, and
+    CloudWatch metrics retrieval.
+
+    Capabilities: ec2.list, s3.list, lambda.invoke, cloudwatch.metrics.
+    """
     metadata = PluginMetadata(
         id="aws",
         name="AWS",

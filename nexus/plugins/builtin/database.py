@@ -6,6 +6,13 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class DatabasePlugin(BasePlugin):
+    """Database plugin for PostgreSQL, MySQL, and MongoDB access.
+
+    Supports running queries, inserting records, and finding records
+    across SQL and NoSQL databases. Requires connection string authentication.
+
+    Capabilities: query.run, records.insert, records.find.
+    """
     metadata = PluginMetadata(
         id="database",
         name="Database",

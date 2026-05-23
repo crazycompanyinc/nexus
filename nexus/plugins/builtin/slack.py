@@ -6,6 +6,13 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class SlackPlugin(BasePlugin):
+    """Slack plugin for messaging and channel management.
+
+    Supports sending messages, listing channels, and adding reactions.
+    Requires OAuth authentication against the Slack API.
+
+    Capabilities: messages.send, channels.list, reactions.add.
+    """
     metadata = PluginMetadata(
         id="slack",
         name="Slack",

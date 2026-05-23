@@ -6,6 +6,16 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class FileSystemPlugin(BasePlugin):
+    """File system plugin providing read, write, list, and watch operations.
+
+    An in-memory filesystem implementation for testing and development.
+    Supports the file.read, file.write, file.list, and file.watch capabilities.
+
+    Example:
+        >>> plugin = FileSystemPlugin()
+        >>> plugin.execute("file.read", {"path": "README.md"})
+        {'path': 'README.md', 'content': '# Nexus\\n'}
+    """
     metadata = PluginMetadata(
         id="filesystem",
         name="FileSystem",

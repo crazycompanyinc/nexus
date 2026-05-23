@@ -6,6 +6,13 @@ from nexus.plugins.sdk import BasePlugin, PluginMetadata
 
 
 class EmailPlugin(BasePlugin):
+    """Email plugin for sending, receiving, and searching messages.
+
+    Provides SMTP-based email operations including send, receive, and search.
+    Requires SMTP authentication.
+
+    Capabilities: email.send, email.receive, email.search.
+    """
     metadata = PluginMetadata(
         id="email",
         name="Email",
