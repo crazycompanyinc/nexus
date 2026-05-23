@@ -870,25 +870,6 @@ def create_app() -> FastAPI:
     app.state.manager = manager
     app.state.api = api
 
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        """Lifespan context manager for startup/shutdown events.
-
-        On shutdown, logs a summary of calls, agents, and plugins
-        for observability.
-        """
-        yield
-        stats = store.stats()
-        logger.info(
-            "Nexus shutting down — agents=%d plugins=%d calls=%d workflows=%d",
-            len(store.agents),
-            len(store.plugins),
-            stats.get("calls", 0),
-            stats.get("workflows", 0),
-        )
-
-    app.router.lifespan_context = lifespan  # type: ignore[attr-defined]
-
     return app
 
 
