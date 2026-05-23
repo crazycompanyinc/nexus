@@ -52,7 +52,7 @@ class TestToolPluginFromDict:
         """from_dict works with only required fields."""
         data = {
             "id": "minimal",
-            name:="Minimal",
+            "name": "Minimal",
             "description": "Minimal plugin",
             "version": "0.1.0",
             "plugin_type": "library",
