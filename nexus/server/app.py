@@ -641,12 +641,19 @@ def create_app() -> FastAPI:
             "bindings": enriched,
             "total": len(enriched),
         }
+
+    @app.get("/audit", tags=["Audit"])
+    async def audit_trail(limit: int = Query(50, ge=1, le=500)) -> list[dict[str, Any]]:
+        """Retrieve the most recent audit events.
+
+        Args:
             limit: Maximum number of events to return.
 
         Returns:
             A list of audit event dicts, most recent first.
         """
-        return store.audit_events[-limit:]
+        events = list(store.audit_events)
+        return events[-limit:]
 
     @app.delete("/bindings/{agent_id}/{tool_id}", tags=["Bindings"])
     async def unbind(agent_id: str, tool_id: str) -> dict[str, Any]:
