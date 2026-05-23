@@ -852,13 +852,14 @@ def create_app() -> FastAPI:
     app.state.manager = manager
     app.state.api = api
 
-    @app.on_event("shutdown")
-    async def shutdown_event() -> None:
-        """Graceful shutdown: persist store snapshot and log final stats.
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """Lifespan context manager for startup/shutdown events.
 
-        Called when the FastAPI application is shutting down. Logs a
-        summary of calls, agents, and plugins for observability.
+        On shutdown, logs a summary of calls, agents, and plugins
+        for observability.
         """
+        yield
         stats = store.stats()
         logger.info(
             "Nexus shutting down — agents=%d plugins=%d calls=%d workflows=%d",
@@ -867,6 +868,8 @@ def create_app() -> FastAPI:
             stats.get("calls", 0),
             stats.get("workflows", 0),
         )
+
+    app.router.lifespan_context = lifespan  # type: ignore[attr-defined]
 
     return app
 
