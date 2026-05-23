@@ -30,6 +30,12 @@ class RateLimitMiddleware:
     """
 
     def __init__(self, max_requests: int = 120, window_seconds: int = 60) -> None:
+        """Initialize the rate limiter.
+
+        Args:
+            max_requests: Maximum requests allowed per window per client IP.
+            window_seconds: Time window in seconds.
+        """
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self._requests: dict[str, list[float]] = {}
