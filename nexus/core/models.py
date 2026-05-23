@@ -230,6 +230,22 @@ class WorkflowStep:
     def __repr__(self) -> str:
         return f"WorkflowStep(tool={self.tool_id!r}, action={self.action!r}, retries={self.max_retries})"
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dict.
+
+        Returns:
+            A dict representation suitable for JSON serialization.
+        """
+        return {
+            "tool_id": self.tool_id,
+            "action": self.action,
+            "params": dict(self.params),
+            "condition": self.condition,
+            "fallback_tools": list(self.fallback_tools),
+            "max_retries": self.max_retries,
+            "retry_delay_ms": self.retry_delay_ms,
+        }
+
 
 @dataclass(slots=True)
 class Workflow:
