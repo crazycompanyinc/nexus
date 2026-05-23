@@ -217,7 +217,25 @@ def create_app() -> FastAPI:
     api = UnifiedToolAPI(store, manager, AccessControl(store))
     workflows = WorkflowBuilder(store)
     pipeline = Pipeline(api, store)
-    app = FastAPI(title="Nexus", version="1.1.0")
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        """Lifespan context manager for startup/shutdown events.
+
+        On shutdown, logs a summary of calls, agents, and plugins
+        for observability.
+        """
+        yield
+        stats = store.stats()
+        logger.info(
+            "Nexus shutting down — agents=%d plugins=%d calls=%d workflows=%d",
+            len(store.agents),
+            len(store.plugins),
+            stats.get("calls", 0),
+            stats.get("workflows", 0),
+        )
+
+    app = FastAPI(title="Nexus", version="1.1.0", lifespan=lifespan)
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
     app.add_middleware(
