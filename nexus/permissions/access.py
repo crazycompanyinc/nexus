@@ -6,6 +6,13 @@ from nexus.permissions.permissions import PermissionModel
 
 
 class AccessControl:
+    """Manages agent-tool permission bindings and access control checks.
+
+    Provides grant, revoke, check, and require operations for enforcing
+    permission levels on tool access. All changes are audited through
+    the NexusStore.
+    """
+
     def __init__(self, store: NexusStore, model: PermissionModel | None = None) -> None:
         """Initialize access control with a store and optional permission model.
 
@@ -113,6 +120,11 @@ class AccessControl:
         return bool(binding and binding.permissions == PermissionLevel.ADMIN.value)
 
     def __repr__(self) -> str:
+        """Return a summary of the access control state.
+
+        Returns:
+            String with agent count and binding count.
+        """
         return (
             f"AccessControl(agents={len(self.store.agents)}, "
             f"bindings={len(self.store.bindings)})"
