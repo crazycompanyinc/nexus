@@ -87,5 +87,10 @@ class ToolDiscovery:
         return self.capabilities.find(capability)
 
     def __repr__(self) -> str:
+        """Return a summary of discovered tools.
+
+        Returns:
+            String with the count of available tools.
+        """
         tools = self.available_tools()
         return f"ToolDiscovery(tools={len(tools)})"
