@@ -15,17 +15,20 @@ from nexus.server.app import create_app
 
 
 def test_discovery_lists_tools(hub):
+    """Test: discovery lists tools."""
     _, manager, _ = hub
     tools = ToolDiscovery(manager).available_tools()
     assert any(tool["id"] == "github" for tool in tools)
 
 
 def test_discovery_by_capability(hub):
+    """Test: discovery by capability."""
     _, manager, _ = hub
     assert "slack" in ToolDiscovery(manager).by_capability("messages.send")
 
 
 def test_usage_metrics_after_call(hub):
+    """Test: usage metrics after call."""
     store, _, api = hub
     api.grant("agent", "github", "read")
     api.call("agent", "github", "repos.list", {})
@@ -36,6 +39,7 @@ def test_usage_metrics_after_call(hub):
 
 
 def test_latency_percentiles():
+    """Test: latency percentiles."""
     from nexus.metrics._stats import latency_stats
     stats = latency_stats([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
     assert stats["count"] == 10
@@ -47,6 +51,7 @@ def test_latency_percentiles():
 
 
 def test_latency_percentiles_empty():
+    """Test: latency percentiles empty."""
     from nexus.metrics._stats import latency_stats
     stats = latency_stats([])
     assert stats["count"] == 0
@@ -54,6 +59,7 @@ def test_latency_percentiles_empty():
 
 
 def test_performance_tracker_after_call(hub):
+    """Test: performance tracker after call."""
     store, _, api = hub
     api.grant("agent", "github", "read")
     api.call("agent", "github", "repos.list", {})
@@ -61,17 +67,20 @@ def test_performance_tracker_after_call(hub):
 
 
 def test_fastapi_app_exposes_routes():
+    """Test: fastapi app exposes routes."""
     app = create_app()
     paths = {route.path for route in app.routes}
     assert {"/init", "/plugins", "/tools/{tool_id}/call", "/metrics", "/health"} <= paths
 
 
 def test_fastapi_state_can_initialize_plugins():
+    """Test: fastapi state can initialize plugins."""
     app = create_app()
     assert len(app.state.manager.install_all_builtins()) == 10
 
 
 def test_fastapi_runtime_enforces_permissions():
+    """Test: fastapi runtime enforces permissions."""
     app = create_app()
     app.state.manager.install_all_builtins()
     app.state.api.grant("agent", "github", "read")
@@ -79,18 +88,21 @@ def test_fastapi_runtime_enforces_permissions():
 
 
 def test_cli_demo_runs():
+    """Test: cli demo runs."""
     result = CliRunner().invoke(cli, ["demo"])
     assert result.exit_code == 0
     assert "Deploy notification" in result.output
 
 
 def test_cli_init_lists_plugins():
+    """Test: cli init lists plugins."""
     result = CliRunner().invoke(cli, ["init"])
     assert result.exit_code == 0
     assert "github" in result.output
 
 
 def test_fastapi_delete_workflow():
+    """Test: fastapi delete workflow."""
     from starlette.testclient import TestClient
     app = create_app()
     app.state.manager.install_all_builtins()
@@ -112,6 +124,7 @@ def test_fastapi_delete_workflow():
 
 
 def test_fastapi_unbind():
+    """Test: fastapi unbind."""
     from starlette.testclient import TestClient
     app = create_app()
     app.state.manager.install_all_builtins()
@@ -124,6 +137,7 @@ def test_fastapi_unbind():
 
 
 def test_fastapi_workflow_run_fail_fast():
+    """Test: fastapi workflow run fail fast."""
     from starlette.testclient import TestClient
     app = create_app()
     app.state.manager.install_all_builtins()
@@ -147,6 +161,7 @@ def test_fastapi_workflow_run_fail_fast():
 
 
 def test_step_result_repr():
+    """Test: step result repr."""
     from nexus.composition.workflow import StepResult
     ok = StepResult(step_index=0, tool_id="p1", action="read", success=True, duration_ms=1.5)
     assert "ok" in repr(ok)

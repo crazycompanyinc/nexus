@@ -13,12 +13,15 @@ from nexus.server.app import create_app, RateLimitMiddleware
 
 @pytest.fixture
 def client():
+    """client."""
     app = create_app()
     return TestClient(app)
 
 
 class TestVersionEndpoint:
+    """TestVersionEndpoint."""
     def test_version_returns_semver(self, client):
+    """Test: version returns semver."""
         resp = client.get("/version")
         assert resp.status_code == 200
         data = resp.json()
@@ -27,7 +30,9 @@ class TestVersionEndpoint:
 
 
 class TestPagination:
+    """TestPagination."""
     def test_plugins_pagination_default(self, client):
+    """Test: plugins pagination default."""
         resp = client.get("/plugins")
         assert resp.status_code == 200
         data = resp.json()
@@ -39,6 +44,7 @@ class TestPagination:
         assert data["offset"] == 0
 
     def test_plugins_pagination_offset(self, client):
+    """Test: plugins pagination offset."""
         resp = client.get("/plugins?offset=0&limit=1")
         assert resp.status_code == 200
         data = resp.json()
@@ -46,6 +52,7 @@ class TestPagination:
         assert len(data["items"]) <= 1
 
     def test_workflows_pagination_default(self, client):
+    """Test: workflows pagination default."""
         resp = client.get("/workflows")
         assert resp.status_code == 200
         data = resp.json()
@@ -55,12 +62,15 @@ class TestPagination:
 
 
 class TestRateLimitMiddleware:
+    """TestRateLimitMiddleware."""
     def test_allows_under_limit(self):
+    """Test: allows under limit."""
         rl = RateLimitMiddleware(max_requests=5, window_seconds=60)
         # Simulate 4 requests — all should pass
         import asyncio
 
         async def simulate():
+    """simulate."""
             from starlette.requests import Request
             from starlette.datastructures import Address
 
@@ -83,10 +93,12 @@ class TestRateLimitMiddleware:
         assert all(r is None for r in results), "All requests under limit should pass"
 
     def test_blocks_over_limit(self):
+    """Test: blocks over limit."""
         rl = RateLimitMiddleware(max_requests=3, window_seconds=60)
         import asyncio
 
         async def simulate():
+    """simulate."""
             from starlette.requests import Request
             from starlette.datastructures import Address
 
@@ -116,7 +128,9 @@ class TestRateLimitMiddleware:
 
 
 class TestBatchCallEndpoint:
+    """TestBatchCallEndpoint."""
     def test_batch_call_empty(self, client):
+    """Test: batch call empty."""
         resp = client.post("/tools/batch", json=[])
         assert resp.status_code == 200
         data = resp.json()
@@ -125,6 +139,7 @@ class TestBatchCallEndpoint:
         assert data["failed"] == 0
 
     def test_batch_call_single(self, client):
+    """Test: batch call single."""
         resp = client.post("/tools/batch", json=[
             {"agent_id": "test-agent", "tool_id": "http", "action": "fetch", "params": {"url": "https://example.com"}}
         ])
@@ -133,6 +148,7 @@ class TestBatchCallEndpoint:
         assert len(data["results"]) == 1
 
     def test_batch_call_multiple(self, client):
+    """Test: batch call multiple."""
         resp = client.post("/tools/batch", json=[
             {"agent_id": "test-agent", "tool_id": "http", "action": "fetch", "params": {}},
             {"agent_id": "test-agent", "tool_id": "filesystem", "action": "file.read", "params": {"path": "/tmp/test"}},
@@ -145,7 +161,9 @@ class TestBatchCallEndpoint:
 
 
 class TestHealthDetailed:
+    """TestHealthDetailed."""
     def test_health_detailed_returns_store_stats(self, client):
+    """Test: health detailed returns store stats."""
         resp = client.get("/health/detailed")
         assert resp.status_code == 200
         data = resp.json()
@@ -157,7 +175,9 @@ class TestHealthDetailed:
 
 
 class TestStoreExportImport:
+    """TestStoreExportImport."""
     def test_export_returns_data(self, client):
+    """Test: export returns data."""
         resp = client.post("/store/export")
         assert resp.status_code == 200
         data = resp.json()
@@ -166,6 +186,7 @@ class TestStoreExportImport:
         assert "workflows" in data
 
     def test_import_replaces_data(self, client):
+    """Test: import replaces data."""
         # First export
         resp = client.post("/store/export")
         exported = resp.json()
@@ -178,7 +199,9 @@ class TestStoreExportImport:
 
 
 class TestListAgentsEndpoint:
+    """TestListAgentsEndpoint."""
     def test_list_agents_empty(self, client):
+    """Test: list agents empty."""
         resp = client.get("/agents")
         assert resp.status_code == 200
         data = resp.json()
@@ -186,6 +209,7 @@ class TestListAgentsEndpoint:
         assert data["total"] == 0
 
     def test_list_agents_with_registered(self, client):
+    """Test: list agents with registered."""
         # Register an agent via binding
         client.post("/bindings", json={"agent_id": "agent-x", "tool_id": "http", "level": "read"})
         resp = client.get("/agents")
@@ -196,6 +220,7 @@ class TestListAgentsEndpoint:
         assert "agent-x" in agent_ids
 
     def test_list_agents_includes_metadata(self, client):
+    """Test: list agents includes metadata."""
         client.post("/bindings", json={"agent_id": "agent-meta", "tool_id": "http", "level": "write"})
         resp = client.get("/agents")
         assert resp.status_code == 200
@@ -207,11 +232,14 @@ class TestListAgentsEndpoint:
 
 
 class TestAgentUsageEndpoint:
+    """TestAgentUsageEndpoint."""
     def test_agent_usage_not_found(self, client):
+    """Test: agent usage not found."""
         resp = client.get("/agents/nonexistent/usage")
         assert resp.status_code == 404
 
     def test_agent_usage_returns_metrics(self, client):
+    """Test: agent usage returns metrics."""
         # Register agent and make a call
         client.post("/bindings", json={"agent_id": "agent-usage", "tool_id": "http", "level": "write"})
         client.post("/tools/http/call", json={
@@ -228,7 +256,9 @@ class TestAgentUsageEndpoint:
 
 
 class TestMetricsTimeRange:
+    """TestMetricsTimeRange."""
     def test_metrics_no_params(self, client):
+    """Test: metrics no params."""
         resp = client.get("/metrics")
         assert resp.status_code == 200
         data = resp.json()
@@ -238,28 +268,34 @@ class TestMetricsTimeRange:
         assert "error_rate" in data
 
     def test_metrics_with_since(self, client):
+    """Test: metrics with since."""
         resp = client.get("/metrics?since=2026-01-01T00:00:00Z")
         assert resp.status_code == 200
         data = resp.json()
         assert "total_calls" in data
 
     def test_metrics_with_since_and_until(self, client):
+    """Test: metrics with since and until."""
         resp = client.get("/metrics?since=2026-01-01T00:00:00Z&until=2099-12-31T23:59:59Z")
         assert resp.status_code == 200
         data = resp.json()
         assert "total_calls" in data
 
     def test_metrics_invalid_since(self, client):
+    """Test: metrics invalid since."""
         resp = client.get("/metrics?since=not-a-date")
         assert resp.status_code == 400
 
     def test_metrics_invalid_until(self, client):
+    """Test: metrics invalid until."""
         resp = client.get("/metrics?until=also-not-a-date")
         assert resp.status_code == 400
 
 
 class TestValueErrorHandler:
+    """TestValueErrorHandler."""
     def test_value_error_returns_400(self, client):
+    """Test: value error returns 400."""
         # Trigger a ValueError via workflow creation with empty name
         resp = client.post("/workflows", json={"name": "", "steps": [], "created_by": "test"})
         assert resp.status_code == 400
@@ -269,7 +305,9 @@ class TestValueErrorHandler:
 
 
 class TestVersionBumped:
+    """TestVersionBumped."""
     def test_version_is_1_1_0(self, client):
+    """Test: version is 1 1 0."""
         resp = client.get("/version")
         assert resp.status_code == 200
         data = resp.json()

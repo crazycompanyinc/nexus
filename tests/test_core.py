@@ -10,12 +10,14 @@ from nexus.core.models import AgentToolBinding, ToolCall, ToolPlugin, Workflow, 
 
 
 def test_store_registers_agent():
+    """Test: store registers agent."""
     store = NexusStore()
     store.register_agent("a1")
     assert "a1" in store.agents
 
 
 def test_store_upserts_plugin():
+    """Test: store upserts plugin."""
     store = NexusStore()
     plugin = ToolPlugin("p1", "P1", "desc", "1", "api", ["read"])
     store.upsert_plugin(plugin)
@@ -23,12 +25,14 @@ def test_store_upserts_plugin():
 
 
 def test_store_binds_tool():
+    """Test: store binds tool."""
     store = NexusStore()
     store.bind_tool(AgentToolBinding("a1", "p1", "read"))
     assert store.get_binding("a1", "p1").permissions == "read"
 
 
 def test_store_unbinds_tool():
+    """Test: store unbinds tool."""
     store = NexusStore()
     store.bind_tool(AgentToolBinding("a1", "p1", "read"))
     store.unbind_tool("a1", "p1")
@@ -36,12 +40,14 @@ def test_store_unbinds_tool():
 
 
 def test_store_records_call():
+    """Test: store records call."""
     store = NexusStore()
     call = store.record_call(ToolCall("a1", "p1", "read", {}))
     assert list(store.calls) == [call]
 
 
 def test_store_calls_bounded():
+    """Test: store calls bounded."""
     store = NexusStore(max_calls=3)
     for i in range(5):
         store.record_call(ToolCall("a1", "p1", "read", {}))
@@ -49,6 +55,7 @@ def test_store_calls_bounded():
 
 
 def test_store_audit_bounded():
+    """Test: store audit bounded."""
     store = NexusStore(max_audit_events=2)
     store.audit("evt1")
     store.audit("evt2")
@@ -58,6 +65,7 @@ def test_store_audit_bounded():
 
 
 def test_store_saves_workflow():
+    """Test: store saves workflow."""
     store = NexusStore()
     workflow = Workflow("w1", "wf", "desc", [WorkflowStep("p1", "read")])
     store.save_workflow(workflow)
@@ -65,6 +73,7 @@ def test_store_saves_workflow():
 
 
 def test_store_get_workflow():
+    """Test: store get workflow."""
     store = NexusStore()
     workflow = Workflow("w1", "wf", "desc", [WorkflowStep("p1", "read")])
     store.save_workflow(workflow)
@@ -74,6 +83,7 @@ def test_store_get_workflow():
 
 
 def test_store_delete_workflow():
+    """Test: store delete workflow."""
     store = NexusStore()
     workflow = Workflow("w1", "wf", "desc", [WorkflowStep("p1", "read")])
     store.save_workflow(workflow)
@@ -83,17 +93,20 @@ def test_store_delete_workflow():
 
 
 def test_store_snapshot_contains_sections():
+    """Test: store snapshot contains sections."""
     store = NexusStore()
     snapshot = store.snapshot()
     assert set(snapshot) == {"agents", "plugins", "bindings", "calls", "workflows", "audit_events", "calls_total", "audit_total"}
 
 
 def test_tool_plugin_supports_wildcard():
+    """Test: tool plugin supports wildcard."""
     plugin = ToolPlugin("p1", "P1", "desc", "1", "api", ["*"])
     assert plugin.supports("anything")
 
 
 def test_agent_tool_binding_repr():
+    """Test: agent tool binding repr."""
     binding = AgentToolBinding("a1", "p1", "read")
     r = repr(binding)
     assert "a1" in r
@@ -102,6 +115,7 @@ def test_agent_tool_binding_repr():
 
 
 def test_workflow_step_repr():
+    """Test: workflow step repr."""
     step = WorkflowStep("p1", "read", max_retries=3)
     r = repr(step)
     assert "p1" in r
@@ -110,6 +124,7 @@ def test_workflow_step_repr():
 
 
 def test_store_clear():
+    """Test: store clear."""
     store = NexusStore()
     store.register_agent("a1")
     store.upsert_plugin(ToolPlugin("p1", "P1", "desc", "1", "api", ["read"]))
@@ -127,35 +142,41 @@ def test_store_clear():
 
 
 def test_workflow_validate_valid():
+    """Test: workflow validate valid."""
     wf = Workflow("w1", "good", "desc", [WorkflowStep("p1", "read")])
     assert wf.validate() == []
 
 
 def test_workflow_validate_empty_name():
+    """Test: workflow validate empty name."""
     wf = Workflow("w1", "  ", "desc", [WorkflowStep("p1", "read")])
     errors = wf.validate()
     assert any("name" in e.lower() for e in errors)
 
 
 def test_workflow_validate_no_steps():
+    """Test: workflow validate no steps."""
     wf = Workflow("w1", "bad", "desc", [])
     errors = wf.validate()
     assert any("step" in e.lower() for e in errors)
 
 
 def test_workflow_validate_empty_step_fields():
+    """Test: workflow validate empty step fields."""
     wf = Workflow("w1", "bad", "desc", [WorkflowStep("", "")])
     errors = wf.validate()
     assert len(errors) >= 2
 
 
 def test_workflow_validate_negative_retries():
+    """Test: workflow validate negative retries."""
     wf = Workflow("w1", "bad", "desc", [WorkflowStep("p1", "read", max_retries=-1)])
     errors = wf.validate()
     assert any("retries" in e.lower() for e in errors)
 
 
 def test_store_export_import():
+    """Test: store export import."""
     store = NexusStore()
     store.register_agent("a1")
     store.upsert_plugin(ToolPlugin("p1", "P1", "desc", "1", "api", ["read"]))
@@ -175,6 +196,7 @@ def test_store_export_import():
 
 
 def test_store_import_replaces_data():
+    """Test: store import replaces data."""
     store = NexusStore()
     store.register_agent("old_agent")
     exported = store.export()
@@ -187,6 +209,7 @@ def test_store_import_replaces_data():
 
 
 def test_store_export_empty():
+    """Test: store export empty."""
     store = NexusStore()
     exported = store.export()
     assert exported["agents"] == []
@@ -195,6 +218,7 @@ def test_store_export_empty():
 
 
 def test_agent_tool_binding_to_dict():
+    """Test: agent tool binding to dict."""
     binding = AgentToolBinding("a1", "p1", "write", config={"timeout": 30})
     d = binding.to_dict()
     assert d["agent_id"] == "a1"
@@ -205,6 +229,7 @@ def test_agent_tool_binding_to_dict():
 
 
 def test_workflow_to_dict():
+    """Test: workflow to dict."""
     wf = Workflow(
         id="wf-1",
         name="Test Flow",
@@ -224,6 +249,7 @@ def test_workflow_to_dict():
 
 
 def test_store_iter():
+    """Test: store iter."""
     store = NexusStore()
     c1 = store.record_call(ToolCall("a1", "p1", "read", {}))
     c2 = store.record_call(ToolCall("a1", "p1", "write", {}))
@@ -234,6 +260,7 @@ def test_store_iter():
 
 
 def test_unified_api_repr():
+    """Test: unified api repr."""
     from nexus.api.unified import UnifiedToolAPI
     api = UnifiedToolAPI(max_retries=5, retry_base_delay=0.5)
     r = repr(api)
@@ -243,6 +270,7 @@ def test_unified_api_repr():
 
 
 def test_store_health_check():
+    """Test: store health check."""
     store = NexusStore()
     store.register_agent("a1")
     store.upsert_plugin(ToolPlugin("p1", "P1", "desc", "1", "api", ["read"]))
@@ -266,6 +294,7 @@ def test_store_health_check():
 
 
 def test_store_health_check_empty():
+    """Test: store health check empty."""
     store = NexusStore()
     health = store.health_check()
     assert health["status"] == "healthy"
@@ -275,6 +304,7 @@ def test_store_health_check_empty():
 
 
 def test_store_search_calls():
+    """Test: store search calls."""
     store = NexusStore()
     store.record_call(ToolCall("a1", "p1", "read", {}, duration_ms=10.0))
     store.record_call(ToolCall("a1", "p1", "write", {}, duration_ms=50.0))
@@ -311,6 +341,7 @@ def test_store_search_calls():
 
 
 def test_store_search_calls_reverse_chronological():
+    """Test: store search calls reverse chronological."""
     store = NexusStore()
     store.record_call(ToolCall("a1", "p1", "first", {}))
     store.record_call(ToolCall("a1", "p1", "second", {}))
@@ -323,6 +354,7 @@ def test_store_search_calls_reverse_chronological():
 
 
 def test_workflow_step_result_bool():
+    """Test: workflow step result bool."""
     from nexus.composition.workflow import StepResult
     ok = StepResult(step_index=0, tool_id="p1", action="read", success=True)
     fail = StepResult(step_index=1, tool_id="p1", action="write", success=False)
@@ -334,6 +366,7 @@ def test_workflow_step_result_bool():
 
 
 def test_workflow_step_result_repr():
+    """Test: workflow step result repr."""
     from nexus.composition.workflow import StepResult
     ok = StepResult(step_index=0, tool_id="p1", action="read", success=True, duration_ms=42.5)
     fail = StepResult(step_index=1, tool_id="p2", action="write", success=False, duration_ms=10.0)
@@ -349,6 +382,7 @@ def test_workflow_step_result_repr():
 
 
 def test_workflow_builder_repr():
+    """Test: workflow builder repr."""
     from nexus.composition.workflow import WorkflowBuilder
     store = NexusStore()
     builder = WorkflowBuilder(store)
@@ -359,6 +393,7 @@ def test_workflow_builder_repr():
 
 
 def test_workflow_builder_len():
+    """Test: workflow builder len."""
     from nexus.composition.workflow import WorkflowBuilder
     store = NexusStore()
     builder = WorkflowBuilder(store)

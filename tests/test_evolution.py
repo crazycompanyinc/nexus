@@ -23,6 +23,7 @@ def test_pipeline_retry_on_failure(hub):
     # Patch the step to fail first 2 times then succeed
     original_call = api.call
     def flaky_call(agent_id, tool_id, action, params, fallback_tools=None):
+    """flaky call."""
         nonlocal call_count
         call_count += 1
         if call_count <= 2:
@@ -488,15 +489,18 @@ class TestNexusStoreContains:
     """Test __contains__ for agent membership testing."""
 
     def test_contains_registered_agent(self):
+    """Test: contains registered agent."""
         store = NexusStore()
         store.register_agent("a1")
         assert "a1" in store
 
     def test_not_contains_unregistered_agent(self):
+    """Test: not contains unregistered agent."""
         store = NexusStore()
         assert "nonexistent" not in store
 
     def test_contains_after_clear(self):
+    """Test: contains after clear."""
         store = NexusStore()
         store.register_agent("a1")
         assert "a1" in store
@@ -508,11 +512,13 @@ class TestNexusStoreAgentCallCount:
     """Test agent_call_count and last_call_for_agent methods."""
 
     def test_agent_call_count_zero(self):
+    """Test: agent call count zero."""
         store = NexusStore()
         store.register_agent("a1")
         assert store.agent_call_count("a1") == 0
 
     def test_agent_call_count_multiple(self):
+    """Test: agent call count multiple."""
         store = NexusStore()
         for _ in range(5):
             store.record_call(ToolCall("a1", "t1", "read", {}))
@@ -522,15 +528,18 @@ class TestNexusStoreAgentCallCount:
         assert store.agent_call_count("a2") == 3
 
     def test_agent_call_count_unknown_agent(self):
+    """Test: agent call count unknown agent."""
         store = NexusStore()
         assert store.agent_call_count("unknown") == 0
 
     def test_last_call_for_agent_none(self):
+    """Test: last call for agent none."""
         store = NexusStore()
         store.register_agent("a1")
         assert store.last_call_for_agent("a1") is None
 
     def test_last_call_for_agent_returns_most_recent(self):
+    """Test: last call for agent returns most recent."""
         store = NexusStore()
         store.record_call(ToolCall("a1", "t1", "read", {}))
         store.record_call(ToolCall("a1", "t2", "write", {}))
@@ -545,23 +554,28 @@ class TestCircuitBreakerValidation:
     """Test CircuitBreaker parameter validation."""
 
     def test_zero_failure_threshold_raises(self):
+    """Test: zero failure threshold raises."""
         with pytest.raises(ValueError, match="failure_threshold must be >= 1"):
             CircuitBreaker(failure_threshold=0)
 
     def test_negative_failure_threshold_raises(self):
+    """Test: negative failure threshold raises."""
         with pytest.raises(ValueError, match="failure_threshold must be >= 1"):
             CircuitBreaker(failure_threshold=-1)
 
     def test_negative_recovery_timeout_raises(self):
+    """Test: negative recovery timeout raises."""
         with pytest.raises(ValueError, match="recovery_timeout must be >= 0"):
             CircuitBreaker(recovery_timeout=-1.0)
 
     def test_valid_defaults(self):
+    """Test: valid defaults."""
         cb = CircuitBreaker()
         assert cb.failure_threshold == 5
         assert cb.recovery_timeout == 30.0
 
     def test_valid_custom_params(self):
+    """Test: valid custom params."""
         cb = CircuitBreaker(failure_threshold=1, recovery_timeout=0.0)
         assert cb.failure_threshold == 1
         assert cb.recovery_timeout == 0.0
@@ -571,6 +585,7 @@ class TestToolPluginToDict:
     """Test ToolPlugin.to_dict serialization."""
 
     def test_to_dict_contains_all_fields(self):
+    """Test: to dict contains all fields."""
         plugin = ToolPlugin("p1", "P1", "desc", "1.0", "api", ["read", "write"])
         d = plugin.to_dict()
         assert d["id"] == "p1"
@@ -583,6 +598,7 @@ class TestToolPluginToDict:
         assert "registered_at" in d
 
     def test_to_dict_iso_timestamp(self):
+    """Test: to dict iso timestamp."""
         plugin = ToolPlugin("p1", "P1", "desc", "1.0", "api", ["read"])
         d = plugin.to_dict()
         # ISO 8601 format check: should contain 'T' and end with '+00:00' or 'Z'
@@ -591,6 +607,7 @@ class TestToolPluginToDict:
         assert "+" in ts or ts.endswith("Z")
 
     def test_to_dict_copies_mutable_fields(self):
+    """Test: to dict copies mutable fields."""
         plugin = ToolPlugin("p1", "P1", "desc", "1.0", "api", ["read"])
         d = plugin.to_dict()
         d["capabilities"].append("admin")

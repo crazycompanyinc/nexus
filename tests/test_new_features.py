@@ -9,6 +9,7 @@ from nexus.metrics.performance import PerformanceTracker
 
 
 def _make_call(agent_id: str, tool_id: str, action: str = "read",
+    """Helper: make call."""
                status: str = "success", duration_ms: float = 10.0,
                called_at: datetime | None = None,
                params: dict | None = None) -> ToolCall:
@@ -26,7 +27,9 @@ def _make_call(agent_id: str, tool_id: str, action: str = "read",
 
 
 class TestAgentCalls:
+    """TestAgentCalls."""
     def test_agent_calls_returns_only_matching_agent(self):
+    """Test: agent calls returns only matching agent."""
         store = NexusStore()
         store.calls.append(_make_call("a1", "t1"))
         store.calls.append(_make_call("a2", "t1"))
@@ -36,6 +39,7 @@ class TestAgentCalls:
         assert all(c.agent_id == "a1" for c in result)
 
     def test_agent_calls_most_recent_first(self):
+    """Test: agent calls most recent first."""
         store = NexusStore()
         c1 = _make_call("a1", "t1")
         c1.called_at = datetime(2026, 1, 1, 10, 0, tzinfo=timezone.utc)
@@ -48,6 +52,7 @@ class TestAgentCalls:
         assert result[1].tool_id == "t1"
 
     def test_agent_calls_filter_by_status(self):
+    """Test: agent calls filter by status."""
         store = NexusStore()
         store.calls.append(_make_call("a1", "t1", status="success"))
         store.calls.append(_make_call("a1", "t2", status="error"))
@@ -57,6 +62,7 @@ class TestAgentCalls:
         assert all(c.status == "error" for c in result)
 
     def test_agent_calls_with_limit(self):
+    """Test: agent calls with limit."""
         store = NexusStore()
         for i in range(10):
             store.calls.append(_make_call("a1", f"t{i}"))
@@ -64,12 +70,15 @@ class TestAgentCalls:
         assert len(result) == 3
 
     def test_agent_calls_empty_when_no_calls(self):
+    """Test: agent calls empty when no calls."""
         store = NexusStore()
         assert store.agent_calls("nonexistent") == []
 
 
 class TestCallsOverTime:
+    """TestCallsOverTime."""
     def test_calls_over_time_hourly_bucket(self):
+    """Test: calls over time hourly bucket."""
         store = NexusStore()
         base = datetime(2026, 1, 1, 10, 0, tzinfo=timezone.utc)
         for i in range(5):
@@ -85,6 +94,7 @@ class TestCallsOverTime:
         assert series[1]["total"] == 3
 
     def test_counts_errors_separately(self):
+    """Test: counts errors separately."""
         store = NexusStore()
         base = datetime(2026, 1, 1, 10, 0, tzinfo=timezone.utc)
         store.calls.append(_make_call("a1", "t1", status="success", called_at=base))
@@ -96,19 +106,23 @@ class TestCallsOverTime:
         assert series[0]["errors"] == 1
 
     def test_invalid_bucket_raises(self):
+    """Test: invalid bucket raises."""
         store = NexusStore()
         metrics = UsageMetrics(store)
         with pytest.raises(ValueError, match="bucket must be one of"):
             metrics.calls_over_time(bucket="weekly")
 
     def test_empty_store_returns_empty_series(self):
+    """Test: empty store returns empty series."""
         store = NexusStore()
         metrics = UsageMetrics(store)
         assert metrics.calls_over_time(bucket="hour") == []
 
 
 class TestPerformanceByAgent:
+    """TestPerformanceByAgent."""
     def test_by_agent_returns_metrics_per_agent(self):
+    """Test: by agent returns metrics per agent."""
         store = NexusStore()
         store.agents.add("a1")
         store.agents.add("a2")
@@ -125,6 +139,7 @@ class TestPerformanceByAgent:
         assert result["a2"]["avg_ms"] == 50.0
 
     def test_by_agent_empty_for_no_calls(self):
+    """Test: by agent empty for no calls."""
         store = NexusStore()
         store.agents.add("a1")
         tracker = PerformanceTracker(store)

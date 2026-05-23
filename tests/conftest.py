@@ -10,6 +10,7 @@ from nexus.plugins.manager import PluginManager
 
 @pytest.fixture()
 def hub():
+    """hub."""
     store = NexusStore()
     manager = PluginManager(store)
     api = UnifiedToolAPI(store, manager, AccessControl(store))

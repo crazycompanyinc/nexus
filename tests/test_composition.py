@@ -12,6 +12,7 @@ from nexus.composition.workflow import Pipeline, WorkflowBuilder
 
 
 def test_tool_chain_runs_steps(hub):
+    """Test: tool chain runs steps."""
     _, _, api = hub
     api.grant("agent", "github", "read")
     chain = ToolChain(api, "agent").add("github", "repos.list")
@@ -19,12 +20,14 @@ def test_tool_chain_runs_steps(hub):
 
 
 def test_workflow_builder_creates_workflow(hub):
+    """Test: workflow builder creates workflow."""
     store, _, _ = hub
     workflow = WorkflowBuilder(store).create("wf", [{"tool_id": "github", "action": "repos.list"}], "agent")
     assert workflow.id in store.workflows
 
 
 def test_pipeline_runs_workflow(hub):
+    """Test: pipeline runs workflow."""
     store, _, api = hub
     api.grant("agent", "github", "read")
     workflow = WorkflowBuilder(store).create("wf", [{"tool_id": "github", "action": "repos.list"}], "agent")
@@ -34,6 +37,7 @@ def test_pipeline_runs_workflow(hub):
 
 
 def test_pipeline_resolves_previous(hub):
+    """Test: pipeline resolves previous."""
     store, _, api = hub
     api.grant("agent", "github", "write")
     api.grant("agent", "slack", "write")
@@ -52,6 +56,7 @@ def test_pipeline_resolves_previous(hub):
 
 
 def test_api_fallback_uses_alternative_plugin(hub):
+    """Test: api fallback uses alternative plugin."""
     _, _, api = hub
     api.grant("agent", "http", "read")
     api.grant("agent", "github", "read")
@@ -60,6 +65,7 @@ def test_api_fallback_uses_alternative_plugin(hub):
 
 
 def test_api_raises_when_all_fallbacks_fail(hub):
+    """Test: api raises when all fallbacks fail."""
     _, _, api = hub
     api.grant("agent", "github", "read")
     with pytest.raises(RuntimeError):
@@ -67,6 +73,7 @@ def test_api_raises_when_all_fallbacks_fail(hub):
 
 
 def test_workflow_builder_get_and_list(hub):
+    """Test: workflow builder get and list."""
     store, _, _ = hub
     builder = WorkflowBuilder(store)
     wf = builder.create("wf", [{"tool_id": "github", "action": "repos.list"}], "agent")
@@ -77,6 +84,7 @@ def test_workflow_builder_get_and_list(hub):
 
 
 def test_workflow_builder_update(hub):
+    """Test: workflow builder update."""
     store, _, _ = hub
     builder = WorkflowBuilder(store)
     wf = builder.create("wf", [{"tool_id": "github", "action": "repos.list"}], "agent")
@@ -86,6 +94,7 @@ def test_workflow_builder_update(hub):
 
 
 def test_pipeline_fail_fast(hub):
+    """Test: pipeline fail fast."""
     store, _, api = hub
     api.grant("agent", "github", "read")
     workflow = WorkflowBuilder(store).create(
@@ -104,6 +113,7 @@ def test_pipeline_fail_fast(hub):
 
 
 def test_nexus_store_len_and_recent(hub):
+    """Test: nexus store len and recent."""
     store, _, api = hub
     api.grant("agent", "github", "read")
     assert len(store) == 0
@@ -115,6 +125,7 @@ def test_nexus_store_len_and_recent(hub):
 
 
 def test_tool_chain_fallback_tools_passed(hub):
+    """Test: tool chain fallback tools passed."""
     _, _, api = hub
     api.grant("agent", "http", "read")
     api.grant("agent", "github", "read")
@@ -124,6 +135,7 @@ def test_tool_chain_fallback_tools_passed(hub):
 
 
 def test_dataclass_repr():
+    """Test: dataclass repr."""
     from nexus.core.models import ToolPlugin, ToolCall, Workflow, WorkflowStep
     plugin = ToolPlugin(id="p1", name="Test", description="d", version="1.0", plugin_type="api", capabilities=["read"])
     assert "p1" in repr(plugin)

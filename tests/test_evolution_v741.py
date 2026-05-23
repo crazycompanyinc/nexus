@@ -38,6 +38,7 @@ class TestCallRequestValidation:
     """Test that CallRequest validates agent_id and action fields."""
 
     def test_empty_agent_id_rejected(self, client_with_agent: TestClient):
+    """Test: empty agent id rejected."""
         resp = client_with_agent.post("/tools/http/call", json={
             "agent_id": "",
             "tool_id": "http",
@@ -46,6 +47,7 @@ class TestCallRequestValidation:
         assert resp.status_code == 422
 
     def test_whitespace_agent_id_rejected(self, client_with_agent: TestClient):
+    """Test: whitespace agent id rejected."""
         resp = client_with_agent.post("/tools/http/call", json={
             "agent_id": "   ",
             "tool_id": "http",
@@ -54,6 +56,7 @@ class TestCallRequestValidation:
         assert resp.status_code == 422
 
     def test_empty_action_rejected(self, client_with_agent: TestClient):
+    """Test: empty action rejected."""
         resp = client_with_agent.post("/tools/http/call", json={
             "agent_id": "agent-1",
             "tool_id": "http",
@@ -62,6 +65,7 @@ class TestCallRequestValidation:
         assert resp.status_code == 422
 
     def test_whitespace_action_rejected(self, client_with_agent: TestClient):
+    """Test: whitespace action rejected."""
         resp = client_with_agent.post("/tools/http/call", json={
             "agent_id": "agent-1",
             "tool_id": "http",
@@ -70,6 +74,7 @@ class TestCallRequestValidation:
         assert resp.status_code == 422
 
     def test_valid_call_request_accepted(self, client_with_agent: TestClient):
+    """Test: valid call request accepted."""
         resp = client_with_agent.post("/tools/http/call", json={
             "agent_id": "agent-1",
             "tool_id": "http",
@@ -84,10 +89,12 @@ class TestAgentCallsEndpoint:
     """Test GET /agents/{agent_id}/calls paginated endpoint."""
 
     def test_agent_not_found(self, client: TestClient):
+    """Test: agent not found."""
         resp = client.get("/agents/nonexistent/calls")
         assert resp.status_code == 404
 
     def test_empty_calls(self, client_with_agent: TestClient):
+    """Test: empty calls."""
         resp = client_with_agent.get("/agents/agent-1/calls")
         assert resp.status_code == 200
         data = resp.json()
@@ -96,6 +103,7 @@ class TestAgentCallsEndpoint:
         assert data["has_more"] is False
 
     def test_pagination(self, client_with_agent: TestClient):
+    """Test: pagination."""
         # Make some calls
         for i in range(5):
             client_with_agent.post("/tools/http/call", json={
@@ -113,6 +121,7 @@ class TestAgentCallsEndpoint:
         assert data["has_more"] is True
 
     def test_status_filter(self, client_with_agent: TestClient):
+    """Test: status filter."""
         # Make a call
         client_with_agent.post("/tools/http/call", json={
             "agent_id": "agent-1",
@@ -127,6 +136,7 @@ class TestAgentCallsEndpoint:
             assert item["status"] == "success"
 
     def test_response_structure(self, client_with_agent: TestClient):
+    """Test: response structure."""
         client_with_agent.post("/tools/http/call", json={
             "agent_id": "agent-1",
             "tool_id": "http",
@@ -155,10 +165,12 @@ class TestWorkflowRunsEndpoint:
     """Test GET /workflows/{id}/runs endpoint."""
 
     def test_workflow_not_found(self, client: TestClient):
+    """Test: workflow not found."""
         resp = client.get("/workflows/nonexistent/runs")
         assert resp.status_code == 404
 
     def test_empty_runs(self, client_with_agent: TestClient):
+    """Test: empty runs."""
         # Create a workflow
         resp = client_with_agent.post("/workflows", json={
             "name": "test-wf",
@@ -174,6 +186,7 @@ class TestWorkflowRunsEndpoint:
         assert data["total"] == 0
 
     def test_runs_after_execution(self, client_with_agent: TestClient):
+    """Test: runs after execution."""
         # Create and run a workflow
         resp = client_with_agent.post("/workflows", json={
             "name": "test-wf",
@@ -195,6 +208,7 @@ class TestPatchWorkflowEndpoint:
 
     @pytest.fixture
     def workflow_id(self, client_with_agent: TestClient) -> str:
+    """workflow id."""
         resp = client_with_agent.post("/workflows", json={
             "name": "original-name",
             "description": "original-desc",
@@ -204,6 +218,7 @@ class TestPatchWorkflowEndpoint:
         return resp.json()["id"]
 
     def test_patch_name_only(self, client_with_agent: TestClient, workflow_id: str):
+    """Test: patch name only."""
         resp = client_with_agent.patch(f"/workflows/{workflow_id}", json={
             "name": "updated-name",
             "steps": [],
@@ -214,6 +229,7 @@ class TestPatchWorkflowEndpoint:
         assert data["name"] == "updated-name"
 
     def test_patch_description_only(self, client_with_agent: TestClient, workflow_id: str):
+    """Test: patch description only."""
         resp = client_with_agent.patch(f"/workflows/{workflow_id}", json={
             "description": "updated-desc",
             "steps": [],
@@ -224,6 +240,7 @@ class TestPatchWorkflowEndpoint:
         assert data["description"] == "updated-desc"
 
     def test_patch_not_found(self, client_with_agent: TestClient):
+    """Test: patch not found."""
         resp = client_with_agent.patch("/workflows/nonexistent", json={
             "name": "new-name",
             "steps": [],
@@ -232,6 +249,7 @@ class TestPatchWorkflowEndpoint:
         assert resp.status_code == 404
 
     def test_patch_preserves_unmodified_fields(self, client_with_agent: TestClient, workflow_id: str):
+    """Test: patch preserves unmodified fields."""
         # Get original
         resp = client_with_agent.get(f"/workflows/{workflow_id}")
         original_name = resp.json()["name"]
@@ -251,6 +269,7 @@ class TestStepResultToDict:
     """Test StepResult.to_dict() method."""
 
     def test_success_result(self):
+    """Test: success result."""
         r = StepResult(step_index=0, tool_id="http", action="get", result="ok", duration_ms=42.5, success=True)
         d = r.to_dict()
         assert d["step_index"] == 0
@@ -262,6 +281,7 @@ class TestStepResultToDict:
         assert d["error"] is None
 
     def test_failure_result(self):
+    """Test: failure result."""
         r = StepResult(step_index=1, tool_id="db", action="query", error="timeout", duration_ms=100.0, success=False)
         d = r.to_dict()
         assert d["success"] is False
@@ -273,11 +293,13 @@ class TestWorkflowBuilderRepr:
     """Test WorkflowBuilder.__repr__."""
 
     def test_repr_empty(self):
+    """Test: repr empty."""
         store = NexusStore()
         wb = WorkflowBuilder(store)
         assert "workflows=0" in repr(wb)
 
     def test_repr_with_workflows(self):
+    """Test: repr with workflows."""
         store = NexusStore()
         wb = WorkflowBuilder(store)
         wb.create("test", [{"tool_id": "http", "action": "get"}], "admin")
