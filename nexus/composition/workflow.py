@@ -176,6 +176,50 @@ class WorkflowBuilder:
         """
         return list(self.store.workflows.values())
 
+    def patch(
+        self,
+        workflow_id: str,
+        name: str | None = None,
+        description: str | None = None,
+        created_by: str | None = None,
+        steps: list[dict[str, Any]] | None = None,
+    ) -> Workflow:
+        """Partially update a workflow (PATCH semantics — all fields optional).
+
+        Only provided (non-None, non-empty) fields are applied. Re-validates
+        the workflow after applying changes and records an audit event.
+
+        Args:
+            workflow_id: The workflow to patch.
+            name: New name (optional, applied if non-empty).
+            description: New description (optional, applied if non-empty).
+            created_by: New creator (optional, applied if non-empty).
+            steps: New steps list (optional, applied if non-empty).
+
+        Returns:
+            The patched Workflow instance.
+
+        Raises:
+            KeyError: If workflow_id is not found.
+            ValueError: If validation fails after patching.
+        """
+        workflow = self.store.workflows.get(workflow_id)
+        if workflow is None:
+            raise KeyError(f"Workflow not found: {workflow_id}")
+        if name is not None and name.strip():
+            workflow.name = name
+        if description is not None and description.strip():
+            workflow.description = description
+        if created_by is not None and created_by.strip():
+            workflow.created_by = created_by
+        if steps is not None and steps:
+            workflow.steps = [_parse_step_dict(s) for s in steps]
+        errors = workflow.validate()
+        if errors:
+            raise ValueError(f"Workflow validation failed after patch: {'; '.join(errors)}")
+        self.store.audit("workflow.patched", workflow_id=workflow.id)
+        return workflow
+
     def delete(self, workflow_id: str) -> bool:
         """Delete a workflow by its ID.
 
