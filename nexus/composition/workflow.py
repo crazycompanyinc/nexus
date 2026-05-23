@@ -235,6 +235,11 @@ class WorkflowBuilder:
         return False
 
     def __repr__(self) -> str:
+        """Return a summary of the builder's registered workflows.
+
+        Returns:
+            String with the count of workflows in the store.
+        """
         return f"WorkflowBuilder(workflows={len(self.store.workflows)})"
 
     def __len__(self) -> int:
@@ -268,9 +273,19 @@ class StepResult:
     success: bool = True
 
     def __bool__(self) -> bool:
+        """Return the success status of this step result.
+
+        Returns:
+            True if the step completed successfully, False otherwise.
+        """
         return self.success
 
     def __repr__(self) -> str:
+        """Return a human-readable summary of the step result.
+
+        Returns:
+            String with step index, tool.action, status, and duration.
+        """
         status = "ok" if self.success else "FAIL"
         return f"StepResult(#{self.step_index}, {self.tool_id}.{self.action}, {status}, {self.duration_ms:.1f}ms)"
 
