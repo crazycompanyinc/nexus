@@ -68,3 +68,14 @@ class PluginRegistry:
             Dict mapping plugin ID to its list of capability strings.
         """
         return {plugin.metadata.id: plugin.get_capabilities() for plugin in self._plugins.values()}
+
+    def find_by_capability(self, capability: str) -> list[Plugin]:
+        """Find all plugins that support a given capability.
+
+        Args:
+            capability: The capability string to search for (e.g. 'read', 'write').
+
+        Returns:
+            List of Plugin instances that support the capability.
+        """
+        return [p for p in self._plugins.values() if capability in p.get_capabilities() or "*" in p.get_capabilities()]
