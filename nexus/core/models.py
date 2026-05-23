@@ -145,9 +145,7 @@ class ToolPlugin:
 
 
 @dataclass(slots=True)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ToolPlugin":
+class AgentToolBinding:
         """Reconstruct a ToolPlugin from a dict.
 
         Accepts the same keys produced by ``to_dict()``. Extra keys
