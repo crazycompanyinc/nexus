@@ -175,9 +175,19 @@ class NexusStore:
         return event
 
     def __len__(self) -> int:
+        """Return the number of recorded tool calls.
+
+        Returns:
+            Integer count of calls in the store.
+        """
         return len(self.calls)
 
     def __bool__(self) -> bool:
+        """Return True — a NexusStore is always truthy.
+
+        Returns:
+            Always True, even when the store is empty.
+        """
         return True
 
     def __contains__(self, agent_id: str) -> bool:
