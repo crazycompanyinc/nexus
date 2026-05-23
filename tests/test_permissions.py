@@ -1,3 +1,8 @@
+"""Tests for the Nexus permissions and access control system.
+
+Covers PermissionLevel checks, agent-tool binding permissions,
+access denial for insufficient privileges, and admin override.
+"""
 from __future__ import annotations
 
 import pytest

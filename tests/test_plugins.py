@@ -1,3 +1,8 @@
+"""Tests for the Nexus plugin system (loader, registry, and SDK).
+
+Covers plugin discovery, registration, lifecycle management,
+and the plugin SDK for building custom integrations.
+"""
 from __future__ import annotations
 
 from pathlib import Path

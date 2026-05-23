@@ -1,3 +1,8 @@
+"""Integration tests for the Nexus FastAPI HTTP server.
+
+Tests all REST endpoints: plugins, bindings, calls, workflows, store,
+and error handling for 404/422 responses.
+"""
 from __future__ import annotations
 
 import pytest

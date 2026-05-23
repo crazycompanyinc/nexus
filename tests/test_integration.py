@@ -1,3 +1,8 @@
+"""Integration tests for the Nexus CLI (Click-based command-line interface).
+
+Covers all CLI commands: init, plugin list/add, binding create,
+call execute, workflow run, and store operations.
+"""
 from __future__ import annotations
 
 from click.testing import CliRunner

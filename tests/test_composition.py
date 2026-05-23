@@ -1,3 +1,8 @@
+"""Tests for the Nexus composition layer (ToolChain and WorkflowRunner).
+
+Covers sequential tool chaining, error propagation, retry logic,
+and workflow step execution with fallback tools.
+"""
 from __future__ import annotations
 
 import pytest

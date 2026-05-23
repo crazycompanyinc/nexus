@@ -1,3 +1,8 @@
+"""Unit tests for Nexus core data models and in-memory store.
+
+Covers ToolPlugin, AgentToolBinding, ToolCall, Workflow, WorkflowStep,
+and the NexusStore CRUD operations with fail_fast semantics.
+"""
 from __future__ import annotations
 
 from nexus.core.db import NexusStore
