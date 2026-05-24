@@ -650,17 +650,29 @@ def create_app() -> FastAPI:
         }
 
     @app.get("/audit", tags=["Audit"])
-    async def audit_trail(limit: int = Query(50, ge=1, le=500)) -> list[dict[str, Any]]:
-        """Retrieve the most recent audit events.
+    async def audit_trail(
+        offset: int = Query(0, ge=0),
+        limit: int = Query(50, ge=1, le=500),
+    ) -> dict[str, Any]:
+        """Retrieve audit events with pagination.
 
         Args:
+            offset: Number of events to skip (0-indexed).
             limit: Maximum number of events to return.
 
         Returns:
-            A list of audit event dicts, most recent first.
+            Paginated response with items, total, offset, limit, has_more.
         """
         events = list(store.audit_events)
-        return events[-limit:]
+        total = len(events)
+        paginated = events[offset : offset + limit]
+        return {
+            "items": paginated,
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + limit < total,
+        }
 
     @app.delete("/bindings/{agent_id}/{tool_id}", tags=["Bindings"])
     async def unbind(agent_id: str, tool_id: str) -> dict[str, Any]:
