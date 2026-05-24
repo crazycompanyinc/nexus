@@ -952,7 +952,7 @@ def create_app() -> FastAPI:
             (bindings, workflow steps).
         """
         plugins = manager.list_plugins()
-        agents = store.list_agents()
+        agents = sorted(store.agents)
         workflows_raw = store.workflows
         workflows = [workflows_raw[w_id] for w_id in workflows_raw]
 
