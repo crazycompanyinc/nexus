@@ -1,3 +1,1 @@
-{
-  "tests/test_metrics_prometheus.py::TestPrometheusEndpoint::test_prometheus_metrics_after_calls": true
-}
+{}
