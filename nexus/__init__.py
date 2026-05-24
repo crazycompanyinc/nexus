@@ -4,16 +4,22 @@ from nexus.api.unified import UnifiedToolAPI
 from nexus.api.async_unified import AsyncUnifiedToolAPI
 from nexus.core.models import AgentToolBinding, ToolCall, ToolPlugin, Workflow, WorkflowStep
 from nexus.core.db import NexusStore
+from nexus.core.circuit_breaker import CircuitBreaker
+from nexus.core.circuit_breaker_plugin import CircuitBreakerPlugin
 from nexus.permissions.access import AccessControl
 from nexus.plugins.manager import PluginManager
 from nexus.metrics.metrics import UsageMetrics
 from nexus.metrics.performance import PerformanceTracker
 from nexus.composition.workflow import WorkflowBuilder, Pipeline
+from nexus.composition.chain import AsyncToolChain
 
 __all__ = [
     "AgentToolBinding",
+    "AsyncToolChain",
     "AsyncUnifiedToolAPI",
     "AccessControl",
+    "CircuitBreaker",
+    "CircuitBreakerPlugin",
     "NexusStore",
     "PerformanceTracker",
     "Pipeline",
