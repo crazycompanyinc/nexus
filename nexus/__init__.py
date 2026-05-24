@@ -13,7 +13,7 @@ from nexus.metrics.performance import PerformanceTracker
 from nexus.composition.workflow import WorkflowBuilder, Pipeline
 from nexus.composition.chain import AsyncToolChain
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 __all__ = [
     "AgentToolBinding",
@@ -35,8 +35,6 @@ __all__ = [
     "WorkflowStep",
     "self_evaluate",
 ]
-
-__version__ = "1.2.0"
 
 
 def self_evaluate() -> dict:
