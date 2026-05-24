@@ -357,7 +357,12 @@
   "tests/test_server.py::TestRateLimitMiddleware::test_blocks_over_limit",
   "tests/test_server.py::TestStoreExportImport::test_export_returns_data",
   "tests/test_server.py::TestStoreExportImport::test_import_replaces_data",
+  "tests/test_server.py::TestTopologyEndpoint::test_topology_edges_have_source_target",
+  "tests/test_server.py::TestTopologyEndpoint::test_topology_includes_plugin_nodes",
+  "tests/test_server.py::TestTopologyEndpoint::test_topology_nodes_have_required_fields",
+  "tests/test_server.py::TestTopologyEndpoint::test_topology_returns_nodes_and_edges",
   "tests/test_server.py::TestValueErrorHandler::test_value_error_returns_400",
   "tests/test_server.py::TestVersionBumped::test_version_is_1_1_0",
+  "tests/test_server.py::TestVersionBumped::test_version_is_1_2_0",
   "tests/test_server.py::TestVersionEndpoint::test_version_returns_semver"
 ]

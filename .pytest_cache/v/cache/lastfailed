@@ -1,1 +1,3 @@
-{}
+{
+  "tests/test_server.py::TestTopologyEndpoint::test_topology_returns_nodes_and_edges": true
+}
