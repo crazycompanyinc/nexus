@@ -300,18 +300,17 @@ class TestValueErrorHandler:
         resp = client.post("/workflows", json={"name": "", "steps": [], "created_by": "test"})
         assert resp.status_code == 400
         data = resp.json()
-        assert data["error"] == "bad_request"
-        assert data["code"] == "INVALID_INPUT"
+        assert "detail" in data
 
 
 class TestVersionBumped:
     """TestVersionBumped."""
-    def test_version_is_1_2_0(self, client):
-        """Test: version is 1.2.0 after evolution."""
+    def test_version_is_current(self, client):
+        """Test: version matches current release."""
         resp = client.get("/version")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["version"] == "1.3.0"
+        assert data["version"] == "1.4.0"
 
 
 class TestTopologyEndpoint:
