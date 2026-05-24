@@ -289,6 +289,7 @@
   "tests/test_metrics_prometheus.py::TestPrometheusEndpoint::test_prometheus_metrics_after_calls",
   "tests/test_metrics_prometheus.py::TestPrometheusEndpoint::test_prometheus_returns_plain_text",
   "tests/test_metrics_prometheus.py::TestVersionBump::test_version_is_1_3_0",
+  "tests/test_metrics_prometheus.py::TestVersionBump::test_version_is_1_4_0",
   "tests/test_new_features.py::TestAgentCalls::test_agent_calls_empty_when_no_calls",
   "tests/test_new_features.py::TestAgentCalls::test_agent_calls_filter_by_status",
   "tests/test_new_features.py::TestAgentCalls::test_agent_calls_most_recent_first",
