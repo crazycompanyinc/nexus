@@ -452,3 +452,32 @@ class Workflow:
             "created_by": self.created_by,
             "created_at": self.created_at.isoformat(),
         }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Workflow":
+        """Reconstruct a Workflow from a dict.
+
+        Args:
+            data: Dict with workflow fields including a 'steps' list
+                  of step dicts.
+
+        Returns:
+            A new Workflow instance.
+
+        Example:
+            >>> data = {"id": "w1", "name": "Deploy", "description": "",
+            ...         "steps": [{"tool_id": "t1", "action": "build"}]}
+            >>> wf = Workflow.from_dict(data)
+            >>> wf.name
+            'Deploy'
+        """
+        steps = [WorkflowStep.from_dict(s) for s in data.get("steps", [])]
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            description=data.get("description", ""),
+            steps=steps,
+            trigger=data.get("trigger", WorkflowTrigger.MANUAL.value),
+            status=data.get("status", WorkflowStatus.ACTIVE.value),
+            created_by=data.get("created_by", "system"),
+        )
