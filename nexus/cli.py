@@ -307,6 +307,15 @@ def serve(port: int) -> None:
 @cli.command()
 def demo() -> None:
     """Run a demo: install builtins, register agents, grant permissions, and call tools."""
+    try:
+        _run_demo()
+    except Exception as exc:
+        click.echo(f"❌ Demo failed: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+def _run_demo() -> None:
+    """Internal demo implementation (separated for error handling)."""
     runtime.manager.install_all_builtins()
     for agent in ["Felix-CTO", "Agent-Alpha", "Felix-Jim"]:
         runtime.store.register_agent(agent)
