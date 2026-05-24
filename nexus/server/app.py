@@ -712,7 +712,10 @@ def create_app() -> FastAPI:
         Returns:
             A dict confirming the revocation.
         """
-        api.access.revoke(agent_id, tool_id)
+        try:
+            api.access.revoke(agent_id, tool_id)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to revoke binding: {exc}") from exc
         return {"revoked": True, "agent_id": agent_id, "tool_id": tool_id}
 
     @app.get("/agents", tags=["Agents"])
