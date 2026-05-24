@@ -1,4 +1,4 @@
-from nexus.composition.chain import ToolChain
+from nexus.composition.chain import AsyncToolChain, ToolChain
 from nexus.composition.workflow import Pipeline, WorkflowBuilder
 
-__all__ = ["Pipeline", "ToolChain", "WorkflowBuilder"]
+__all__ = ["AsyncToolChain", "Pipeline", "ToolChain", "WorkflowBuilder"]
