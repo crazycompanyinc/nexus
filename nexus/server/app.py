@@ -801,6 +801,47 @@ def create_app() -> FastAPI:
             },
         }
 
+    @app.get("/metrics/prometheus", tags=["Metrics"])
+    async def metrics_prometheus() -> str:
+        """Export metrics in Prometheus text-based exposition format.
+
+        Returns metrics compatible with Prometheus, Grafana Agent,
+        and OpenTelemetry collectors. Includes counters for calls
+        and errors, latency summaries, and gauges for agents,
+        plugins, workflows, and bindings.
+
+        Returns:
+            Prometheus-formatted text/plain response.
+        """
+        from fastapi.responses import PlainTextResponse
+        metrics = UsageMetrics(store)
+        return PlainTextResponse(content=metrics.to_prometheus(), media_type="text/plain")
+
+    @app.get("/metrics/circuit-breakers", tags=["Metrics"])
+    async def circuit_breaker_status() -> dict[str, Any]:
+        """Get circuit breaker states for all registered plugins.
+
+        Returns the current state (closed/open/half_open), failure count,
+        and success count for each plugin's circuit breaker.
+
+        Returns:
+            Dict mapping plugin_id to circuit breaker status dict.
+        """
+        result: dict[str, dict[str, Any]] = {}
+        for plugin in manager.list_plugins():
+            cb = getattr(plugin, 'circuit_breaker', None)
+            if cb is not None:
+                result[plugin.id] = {
+                    "state": cb.state.value,
+                    "failure_count": cb._failure_count,
+                    "success_count": cb._success_count,
+                    "failure_threshold": cb.failure_threshold,
+                    "recovery_timeout": cb.recovery_timeout,
+                }
+            else:
+                result[plugin.id] = {"state": "no_circuit_breaker"}
+        return result
+
     @app.get("/agents/{agent_id}/calls", tags=["Agents"])
     async def agent_calls(
         agent_id: str,
