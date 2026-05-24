@@ -9,6 +9,9 @@ from nexus.core.models import ToolCall
 from nexus.metrics._stats import latency_stats
 
 
+__all__ = ["UsageMetrics"]
+
+
 class UsageMetrics:
     """Aggregates and summarizes tool usage data from the NexusStore."""
 

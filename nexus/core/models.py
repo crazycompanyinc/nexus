@@ -7,6 +7,22 @@ from typing import Any
 from uuid import uuid4
 
 
+__all__ = [
+    "AgentToolBinding",
+    "CallStatus",
+    "PermissionLevel",
+    "PluginStatus",
+    "PluginType",
+    "ToolCall",
+    "ToolPlugin",
+    "Workflow",
+    "WorkflowStatus",
+    "WorkflowStep",
+    "WorkflowTrigger",
+    "utcnow",
+]
+
+
 def utcnow() -> datetime:
     """Return the current datetime in UTC timezone.
 
@@ -219,6 +235,32 @@ class AgentToolBinding:
             "config": dict(self.config),
             "bound_at": self.bound_at.isoformat(),
         }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "AgentToolBinding":
+        """Reconstruct an AgentToolBinding from a dict.
+
+        Accepts the same keys produced by ``to_dict()``. Extra keys
+        are silently ignored, making the method forward-compatible.
+
+        Args:
+            data: Dict with agent binding fields.
+
+        Returns:
+            A new AgentToolBinding instance.
+
+        Example:
+            >>> data = {"agent_id": "a1", "tool_id": "t1", "permissions": "read"}
+            >>> binding = AgentToolBinding.from_dict(data)
+            >>> binding.agent_id
+            'a1'
+        """
+        return cls(
+            agent_id=data["agent_id"],
+            tool_id=data["tool_id"],
+            permissions=data["permissions"],
+            config=dict(data.get("config", {})),
+        )
 
 
 @dataclass(slots=True)
