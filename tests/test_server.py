@@ -306,9 +306,47 @@ class TestValueErrorHandler:
 
 class TestVersionBumped:
     """TestVersionBumped."""
-    def test_version_is_1_1_0(self, client):
-        """Test: version is 1 1 0."""
+    def test_version_is_1_2_0(self, client):
+        """Test: version is 1.2.0 after evolution."""
         resp = client.get("/version")
         assert resp.status_code == 200
         data = resp.json()
         assert data["version"] == "1.2.0"
+
+
+class TestTopologyEndpoint:
+    """Tests for the /topology system graph endpoint."""
+
+    def test_topology_returns_nodes_and_edges(self, client):
+        """Topology must return 'nodes' and 'edges' keys."""
+        resp = client.get("/topology")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "nodes" in data
+        assert "edges" in data
+        assert isinstance(data["nodes"], list)
+        assert isinstance(data["edges"], list)
+
+    def test_topology_includes_plugin_nodes(self, client):
+        """With builtin plugins installed, topology should have plugin nodes."""
+        resp = client.get("/topology")
+        data = resp.json()
+        plugin_nodes = [n for n in data["nodes"] if n["type"] == "plugin"]
+        assert len(plugin_nodes) > 0
+
+    def test_topology_nodes_have_required_fields(self, client):
+        """Every node must have 'id' and 'type' fields."""
+        resp = client.get("/topology")
+        data = resp.json()
+        for node in data["nodes"]:
+            assert "id" in node
+            assert "type" in node
+            assert node["type"] in ("plugin", "agent", "workflow")
+
+    def test_topology_edges_have_source_target(self, client):
+        """Every edge must have 'source' and 'target' fields."""
+        resp = client.get("/topology")
+        data = resp.json()
+        for edge in data["edges"]:
+            assert "source" in edge
+            assert "target" in edge
