@@ -1,3 +1,1 @@
-{
-  "tests/test_server.py::TestTopologyEndpoint::test_topology_includes_plugin_nodes": true
-}
+{}
