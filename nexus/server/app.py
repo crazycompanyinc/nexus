@@ -235,7 +235,7 @@ def create_app() -> FastAPI:
             stats.get("workflows", 0),
         )
 
-    app = FastAPI(title="Nexus", version="1.3.0", lifespan=lifespan)
+    app = FastAPI(title="Nexus", version="1.4.0", lifespan=lifespan)
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
     @app.exception_handler(Exception)
