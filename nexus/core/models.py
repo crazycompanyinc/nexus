@@ -362,6 +362,31 @@ class WorkflowStep:
             "retry_delay_ms": self.retry_delay_ms,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "WorkflowStep":
+        """Reconstruct a WorkflowStep from a dict.
+
+        Args:
+            data: Dict with workflow step fields.
+
+        Returns:
+            A new WorkflowStep instance.
+
+        Example:
+            >>> step = WorkflowStep.from_dict({"tool_id": "t1", "action": "read"})
+            >>> step.tool_id
+            't1'
+        """
+        return cls(
+            tool_id=data["tool_id"],
+            action=data["action"],
+            params=dict(data.get("params", {})),
+            condition=data.get("condition"),
+            fallback_tools=list(data.get("fallback_tools", [])),
+            max_retries=data.get("max_retries", 0),
+            retry_delay_ms=data.get("retry_delay_ms", 100.0),
+        )
+
 
 @dataclass(slots=True)
 class Workflow:
