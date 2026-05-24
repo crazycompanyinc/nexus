@@ -315,6 +315,44 @@ class ToolCall:
             "called_at": self.called_at.isoformat(),
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ToolCall":
+        """Reconstruct a ToolCall from a dict.
+
+        Accepts the same keys produced by ``to_dict()``. Extra keys
+        are silently ignored, making the method forward-compatible.
+
+        Args:
+            data: Dict with tool call fields.
+
+        Returns:
+            A new ToolCall instance.
+
+        Example:
+            >>> data = {"agent_id": "a1", "tool_id": "t1", "action": "read",
+            ...         "params": {}, "id": "abc", "called_at": "2024-01-01T00:00:00+00:00"}
+            >>> call = ToolCall.from_dict(data)
+            >>> call.tool_id
+            't1'
+        """
+        from datetime import datetime
+        called_at_raw = data.get("called_at")
+        if isinstance(called_at_raw, str):
+            called_at = datetime.fromisoformat(called_at_raw)
+        else:
+            called_at = utcnow()
+        return cls(
+            agent_id=data["agent_id"],
+            tool_id=data["tool_id"],
+            action=data["action"],
+            params=dict(data.get("params", {})),
+            result=data.get("result"),
+            duration_ms=data.get("duration_ms", 0.0),
+            status=data.get("status", CallStatus.SUCCESS.value),
+            id=data.get("id", str(uuid4())),
+            called_at=called_at,
+        )
+
 
 @dataclass(slots=True)
 class WorkflowStep:
