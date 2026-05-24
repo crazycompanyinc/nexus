@@ -328,9 +328,8 @@ class TestTopologyEndpoint:
         assert isinstance(data["edges"], list)
 
     def test_topology_includes_plugin_nodes(self, client):
-        """After installing builtins, topology should have plugin nodes."""
-        # Install builtins via API first
-        client.post("/plugins/discover")
+        """After init, topology should have plugin nodes."""
+        client.post("/init")
         resp = client.get("/topology")
         data = resp.json()
         plugin_nodes = [n for n in data["nodes"] if n["type"] == "plugin"]
