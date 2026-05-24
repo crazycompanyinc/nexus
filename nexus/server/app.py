@@ -940,6 +940,64 @@ def create_app() -> FastAPI:
         from nexus import __version__
         return {"version": __version__}
 
+    @app.get("/topology", tags=["System"])
+    async def topology() -> dict[str, Any]:
+        """Return the full system topology graph.
+
+        Shows registered plugins, agent bindings, and workflow connections
+        as a directed graph suitable for visualization.
+
+        Returns:
+            A dict with nodes (plugins, agents, workflows) and edges
+            (bindings, workflow steps).
+        """
+        plugins = manager.list_plugins()
+        agents = store.list_agents()
+        workflows_raw = store.workflows
+        workflows = [workflows_raw[w_id] for w_id in workflows_raw]
+
+        plugin_nodes = [
+            {
+                "id": p.id,
+                "type": "plugin",
+                "name": p.name,
+                "status": p.status,
+                "plugin_type": p.plugin_type,
+                "capabilities": p.capabilities,
+            }
+            for p in plugins
+        ]
+        agent_nodes = [
+            {"id": a, "type": "agent", "name": a}
+            for a in agents
+        ]
+        workflow_nodes = [
+            {
+                "id": w.id,
+                "type": "workflow",
+                "name": w.name,
+                "status": w.status,
+                "steps": len(w.steps),
+            }
+            for w in workflows
+        ]
+
+        binding_edges = [
+            {"source": b.agent_id, "target": b.tool_id, "type": "binding", "permissions": b.permissions}
+            for b in store.bindings
+        ]
+        workflow_edges = []
+        for w in workflows:
+            for step in w.steps:
+                workflow_edges.append(
+                    {"source": w.id, "target": step.tool_id, "type": "workflow_step", "action": step.action}
+                )
+
+        return {
+            "nodes": plugin_nodes + agent_nodes + workflow_nodes,
+            "edges": binding_edges + workflow_edges,
+        }
+
     app.state.store = store
     app.state.manager = manager
     app.state.api = api
