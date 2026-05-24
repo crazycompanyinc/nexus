@@ -241,10 +241,14 @@ def health() -> None:
 @cli.command()
 def status() -> None:
     """Display a formatted overview: plugins, agents, metrics, and health."""
-    plugins = runtime.manager.list_plugins()
-    agents = sorted(runtime.store.agents)
-    health_info = runtime.manager.health()
-    metrics_info = UsageMetrics(runtime.store).summary()
+    try:
+        plugins = runtime.manager.list_plugins()
+        agents = sorted(runtime.store.agents)
+        health_info = runtime.manager.health()
+        metrics_info = UsageMetrics(runtime.store).summary()
+    except Exception as exc:
+        click.echo(f"❌ Error collecting status: {exc}", err=True)
+        raise SystemExit(1) from exc
 
     # Plugin summary table
     plugin_lines = []
