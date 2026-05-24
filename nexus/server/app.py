@@ -721,19 +721,22 @@ def create_app() -> FastAPI:
     @app.get("/agents", tags=["Agents"])
     async def list_agents() -> dict[str, Any]:
         """List all registered agents with their binding counts."""
-        agents = sorted(store.agents)
-        items = []
-        for agent_id in agents:
-            bindings = api.access.list_agent_permissions(agent_id)
-            total_calls = store.agent_call_count(agent_id)
-            last_call = store.last_call_for_agent(agent_id)
-            items.append({
-                "agent_id": agent_id,
-                "bindings": len(bindings),
-                "total_calls": total_calls,
-                "last_called_at": last_call.called_at.isoformat() if last_call else None,
-            })
-        return {"items": items, "total": len(agents)}
+        try:
+            agents = sorted(store.agents)
+            items = []
+            for agent_id in agents:
+                bindings = api.access.list_agent_permissions(agent_id)
+                total_calls = store.agent_call_count(agent_id)
+                last_call = store.last_call_for_agent(agent_id)
+                items.append({
+                    "agent_id": agent_id,
+                    "bindings": len(bindings),
+                    "total_calls": total_calls,
+                    "last_called_at": last_call.called_at.isoformat() if last_call else None,
+                })
+            return {"items": items, "total": len(agents)}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to list agents: {exc}") from exc
 
     @app.get("/agents/{agent_id}/usage", tags=["Agents"])
     async def agent_usage(agent_id: str) -> dict[str, Any]:
