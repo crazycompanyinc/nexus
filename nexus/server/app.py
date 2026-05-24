@@ -503,8 +503,17 @@ def create_app() -> FastAPI:
 
         Returns:
             A dict with per-step results, succeeded count, and failed count.
+
+        Raises:
+            HTTPException: 404 if the workflow does not exist.
+            HTTPException: 500 if workflow execution fails.
         """
-        step_results = pipeline.run(workflow_id, agent_id, fail_fast=fail_fast)
+        try:
+            step_results = pipeline.run(workflow_id, agent_id, fail_fast=fail_fast)
+        except KeyError:
+            raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Workflow execution failed: {exc}") from exc
         return {
             "results": [
                 {
@@ -553,15 +562,18 @@ def create_app() -> FastAPI:
         Returns:
             A paginated response with workflow items.
         """
-        all_wf = workflows.list()
-        items = [asdict(wf) for wf in all_wf[offset : offset + limit]]
-        return {
-            "items": items,
-            "total": len(all_wf),
-            "offset": offset,
-            "limit": limit,
-            "has_more": offset + limit < len(all_wf),
-        }
+        try:
+            all_wf = workflows.list()
+            items = [asdict(wf) for wf in all_wf[offset : offset + limit]]
+            return {
+                "items": items,
+                "total": len(all_wf),
+                "offset": offset,
+                "limit": limit,
+                "has_more": offset + limit < len(all_wf),
+            }
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to list workflows: {exc}") from exc
 
     @app.get("/workflows/{workflow_id}", tags=["Workflows"])
     async def get_workflow(workflow_id: str) -> dict[str, Any]:
