@@ -325,8 +325,14 @@ def create_app() -> FastAPI:
 
         Returns:
             A dict with the list of installed plugin IDs.
+
+        Raises:
+            HTTPException: 500 if plugin installation fails.
         """
-        return {"plugins": [plugin.id for plugin in manager.install_all_builtins()]}
+        try:
+            return {"plugins": [plugin.id for plugin in manager.install_all_builtins()]}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Initialization failed: {exc}") from exc
 
     @app.get("/health", tags=["System"])
     async def health() -> dict[str, Any]:
@@ -384,7 +390,10 @@ def create_app() -> FastAPI:
         Returns:
             A list of tool descriptors with their capabilities.
         """
-        return ToolDiscovery(manager).available_tools()
+        try:
+            return ToolDiscovery(manager).available_tools()
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Discovery failed: {exc}") from exc
 
     @app.post("/bindings", tags=["Bindings"])
     async def bind(request: BindingRequest) -> dict[str, Any]:
