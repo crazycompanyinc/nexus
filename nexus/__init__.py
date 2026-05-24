@@ -2,7 +2,7 @@
 
 from nexus.api.unified import UnifiedToolAPI
 from nexus.api.async_unified import AsyncUnifiedToolAPI
-from nexus.core.models import AgentToolBinding, ToolCall, ToolPlugin, Workflow
+from nexus.core.models import AgentToolBinding, ToolCall, ToolPlugin, Workflow, WorkflowStep
 from nexus.core.db import NexusStore
 from nexus.permissions.access import AccessControl
 from nexus.plugins.manager import PluginManager
