@@ -255,7 +255,7 @@ def create_app() -> FastAPI:
         return await call_next(request)
 
     @app.middleware("http")
-    async def request_id_middleware(request: Request, call_next):
+    async def request_id_middleware(request: Request, call_next: Any) -> Any:
         """Attach a unique request ID for traceability.
 
         Uses ``X-Request-ID`` header if provided by the client,
@@ -269,7 +269,7 @@ def create_app() -> FastAPI:
         return response
 
     @app.middleware("http")
-    async def timing_middleware(request: Request, call_next):
+    async def timing_middleware(request: Request, call_next: Any) -> Any:
         """Add X-Response-Time header to every response.
 
         Measures wall-clock time from request start to response
