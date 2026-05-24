@@ -238,6 +238,29 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Nexus", version="1.3.0", lifespan=lifespan)
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        """Catch-all exception handler to prevent unhandled errors from leaking.
+
+        Returns a generic 500 response rather than exposing internal details.
+        The full error is still logged server-side.
+        """
+        logger.error(
+            "Unhandled exception on %s %s: %s",
+            request.method,
+            request.url.path,
+            exc,
+            exc_info=True,
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "internal_server_error",
+                "detail": "An unexpected error occurred. Check server logs for details.",
+                "request_id": getattr(request.state, "request_id", None),
+            },
+        )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
