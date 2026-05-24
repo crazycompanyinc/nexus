@@ -1005,7 +1005,10 @@ def create_app() -> FastAPI:
         Returns:
             A dict containing all store data (agents, plugins, bindings, etc.).
         """
-        return store.export()
+        try:
+            return store.export()
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Export failed: {exc}") from exc
 
     @app.post("/store/import", tags=["System"])
     async def import_store(request: dict[str, Any]) -> dict[str, Any]:
@@ -1016,9 +1019,15 @@ def create_app() -> FastAPI:
 
         Returns:
             A dict confirming import with counts of imported entities.
+
+        Raises:
+            HTTPException: 400 if the import data is invalid.
         """
-        store.import_(request)
-        return {"imported": True, "agents": len(store.agents), "plugins": len(store.plugins)}
+        try:
+            store.import_(request)
+            return {"imported": True, "agents": len(store.agents), "plugins": len(store.plugins)}
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Import failed: {exc}") from exc
 
     @app.get("/version", tags=["System"])
     async def version() -> dict[str, str]:
