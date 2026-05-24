@@ -198,6 +198,88 @@ class UsageMetrics:
             for k, v in sorted(buckets.items())
         ]
 
+    def to_prometheus(self) -> str:
+        """Export metrics in Prometheus text-based exposition format.
+
+        Generates gauges and counters for call counts, error rates,
+        latency percentiles, and plugin status. Compatible with
+        Prometheus, Grafana Agent, and OpenTelemetry collectors.
+
+        Returns:
+            Prometheus-formatted text output (Content-Type: text/plain).
+        """
+        from nexus.metrics.performance import PerformanceTracker
+
+        lines: list[str] = []
+        calls = list(self.store.calls)
+        total = len(calls)
+        errors = sum(1 for c in calls if c.status == "error")
+
+        # --- nexus_calls_total counter ---
+        lines.append("# HELP nexus_calls_total Total number of tool calls.")
+        lines.append("# TYPE nexus_calls_total counter")
+        lines.append(f'nexus_calls_total {total}')
+        by_tool: dict[str, int] = Counter(c.tool_id for c in calls)
+        for tool_id, count in by_tool.items():
+            safe = tool_id.replace('"', '\\"')
+            lines.append(f'nexus_calls_total{{tool_id="{safe}"}} {count}')
+        lines.append("")
+
+        # --- nexus_calls_errors_total counter ---
+        lines.append("# HELP nexus_calls_errors_total Total number of failed tool calls.")
+        lines.append("# TYPE nexus_calls_errors_total counter")
+        lines.append(f'nexus_calls_errors_total {errors}')
+        err_by_tool: dict[str, int] = Counter(c.tool_id for c in calls if c.status == "error")
+        for tool_id, count in err_by_tool.items():
+            safe = tool_id.replace('"', '\\"')
+            lines.append(f'nexus_calls_errors_total{{tool_id="{safe}"}} {count}')
+        lines.append("")
+
+        # --- nexus_call_duration_seconds histogram/summary ---
+        durations = [c.duration_ms for c in calls if c.duration_ms > 0]
+        if durations:
+            from nexus.metrics._stats import latency_stats, percentile
+            stats = latency_stats(durations)
+            sorted_d = sorted(durations)
+            lines.append("# HELP nexus_call_duration_seconds Tool call latency distribution.")
+            lines.append("# TYPE nexus_call_duration_seconds summary")
+            lines.append(f'nexus_call_duration_seconds{{quantile="0.5"}} {stats["p50"] / 1000:.3f}')
+            lines.append(f'nexus_call_duration_seconds{{quantile="0.95"}} {stats["p95"] / 1000:.3f}')
+            lines.append(f'nexus_call_duration_seconds{{quantile="0.99"}} {stats["p99"] / 1000:.3f}')
+            total_sec = sum(durations) / 1000.0
+            lines.append(f"nexus_call_duration_seconds_sum {total_sec:.3f}")
+            lines.append(f"nexus_call_duration_seconds_count {len(durations)}")
+            lines.append("")
+
+        # --- nexus_agents gauge ---
+        lines.append("# HELP nexus_agents Total number of registered agents.")
+        lines.append("# TYPE nexus_agents gauge")
+        lines.append(f"nexus_agents {len(self.store.agents)}")
+        lines.append("")
+
+        # --- nexus_plugins gauge ---
+        plugins = list(self.store.plugins.keys()) if hasattr(self.store, 'plugins') else []
+        active = sum(1 for pid in plugins)  # simplified; real status from manager
+        lines.append("# HELP nexus_plugins Total number of registered plugins.")
+        lines.append("# TYPE nexus_plugins gauge")
+        lines.append(f"nexus_plugins {len(plugins)}")
+        lines.append(f'nexus_plugins{{status="active"}} {active}')
+        lines.append("")
+
+        # --- nexus_workflows gauge ---
+        lines.append("# HELP nexus_workflows Total number of registered workflows.")
+        lines.append("# TYPE nexus_workflows gauge")
+        lines.append(f"nexus_workflows {len(self.store.workflows)}")
+        lines.append("")
+
+        # --- nexus_bindings gauge ---
+        lines.append("# HELP nexus_bindings Total number of agent-tool bindings.")
+        lines.append("# TYPE nexus_bindings gauge")
+        lines.append(f"nexus_bindings {len(self.store.bindings)}")
+        lines.append("")
+
+        return "\n".join(lines)
+
     def __repr__(self) -> str:
         """Return a summary of usage metrics.
 
