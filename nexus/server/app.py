@@ -219,7 +219,7 @@ def create_app() -> FastAPI:
     pipeline = Pipeline(api, store)
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI):
+    async def lifespan(_app: FastAPI) -> Any:
         """Lifespan context manager for startup/shutdown events.
 
         On shutdown, logs a summary of calls, agents, and plugins
@@ -247,7 +247,7 @@ def create_app() -> FastAPI:
     )
 
     @app.middleware("http")
-    async def rate_limit_middleware(request: Request, call_next):
+    async def rate_limit_middleware(request: Request, call_next: Any) -> Any:
         """Apply rate limiting to all incoming requests."""
         response = await rate_limiter.check(request)
         if response is not None:
