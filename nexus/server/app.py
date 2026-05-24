@@ -483,8 +483,14 @@ def create_app() -> FastAPI:
 
         Returns:
             A dict representation of the created Workflow.
+
+        Raises:
+            HTTPException: 400 if the workflow definition is invalid.
         """
-        return asdict(workflows.create(request.name, request.steps, request.created_by, request.description))
+        try:
+            return asdict(workflows.create(request.name, request.steps, request.created_by, request.description))
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid workflow: {exc}") from exc
 
     @app.post("/workflows/{workflow_id}/run", tags=["Workflows"])
     async def run_workflow(workflow_id: str, agent_id: str, fail_fast: bool = False) -> dict[str, Any]:
