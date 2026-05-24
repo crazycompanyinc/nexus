@@ -915,14 +915,17 @@ def create_app() -> FastAPI:
         """Get run history for a specific workflow from audit events."""
         if workflow_id not in store.workflows:
             raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
-        runs = [
-            e for e in store.audit_events
-            if e.get("type") == "workflow.ran" and e.get("workflow_id") == workflow_id
-        ]
-        return {
-            "items": runs[-limit:],
-            "total": len(runs),
-        }
+        try:
+            runs = [
+                e for e in store.audit_events
+                if e.get("type") == "workflow.ran" and e.get("workflow_id") == workflow_id
+            ]
+            return {
+                "items": runs[-limit:],
+                "total": len(runs),
+            }
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to fetch workflow runs: {exc}") from exc
 
     @app.patch("/workflows/{workflow_id}", tags=["Workflows"])
     async def patch_workflow(workflow_id: str, request: WorkflowPatchRequest) -> dict[str, Any]:
