@@ -24,6 +24,7 @@ __all__ = [
     "UsageMetrics",
     "Workflow",
     "WorkflowBuilder",
+    "WorkflowStep",
     "self_evaluate",
 ]
 
