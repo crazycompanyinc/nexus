@@ -464,18 +464,24 @@ def create_app() -> FastAPI:
 
         Returns:
             Dict with results list, succeeded count, and failed count.
+
+        Raises:
+            HTTPException: 400 if batch execution fails entirely.
         """
         from nexus.api.async_unified import AsyncUnifiedToolAPI as _AsyncAPI
 
-        async_api = _AsyncAPI(store, manager, AccessControl(store))
-        calls = [
-            {"tool_id": req.tool_id, "action": req.action, "params": req.params, "fallback_tools": req.fallback_tools}
-            for req in requests
-        ]
-        agent_ids = list({req.agent_id for req in requests})
-        primary_agent = agent_ids[0] if len(agent_ids) == 1 else "system"
+        try:
+            async_api = _AsyncAPI(store, manager, AccessControl(store))
+            calls = [
+                {"tool_id": req.tool_id, "action": req.action, "params": req.params, "fallback_tools": req.fallback_tools}
+                for req in requests
+            ]
+            agent_ids = list({req.agent_id for req in requests})
+            primary_agent = agent_ids[0] if len(agent_ids) == 1 else "system"
 
-        raw_results = await async_api.batch_call(primary_agent, calls, fail_fast=False, max_concurrency=10)
+            raw_results = await async_api.batch_call(primary_agent, calls, fail_fast=False, max_concurrency=10)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Batch execution failed: {exc}") from exc
         results = []
         for req, res in zip(requests, raw_results):
             if res["success"]:

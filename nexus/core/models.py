@@ -328,6 +328,11 @@ class ToolCall:
         Returns:
             A new ToolCall instance.
 
+        Raises:
+            ValueError: If required fields (agent_id, tool_id, action) are missing
+                        or if called_at is an invalid ISO 8601 string.
+            TypeError: If data is not a dict.
+
         Example:
             >>> data = {"agent_id": "a1", "tool_id": "t1", "action": "read",
             ...         "params": {}, "id": "abc", "called_at": "2024-01-01T00:00:00+00:00"}
@@ -335,23 +340,33 @@ class ToolCall:
             >>> call.tool_id
             't1'
         """
+        if not isinstance(data, dict):
+            raise TypeError(f"ToolCall.from_dict expects a dict, got {type(data).__name__}")
         from datetime import datetime
         called_at_raw = data.get("called_at")
         if isinstance(called_at_raw, str):
-            called_at = datetime.fromisoformat(called_at_raw)
+            try:
+                called_at = datetime.fromisoformat(called_at_raw)
+            except (ValueError, TypeError) as exc:
+                raise ValueError(
+                    f"Invalid ISO 8601 datetime for 'called_at': {called_at_raw!r}"
+                ) from exc
         else:
             called_at = utcnow()
-        return cls(
-            agent_id=data["agent_id"],
-            tool_id=data["tool_id"],
-            action=data["action"],
-            params=dict(data.get("params", {})),
-            result=data.get("result"),
-            duration_ms=data.get("duration_ms", 0.0),
-            status=data.get("status", CallStatus.SUCCESS.value),
-            id=data.get("id", str(uuid4())),
-            called_at=called_at,
-        )
+        try:
+            return cls(
+                agent_id=data["agent_id"],
+                tool_id=data["tool_id"],
+                action=data["action"],
+                params=dict(data.get("params", {})),
+                result=data.get("result"),
+                duration_ms=data.get("duration_ms", 0.0),
+                status=data.get("status", CallStatus.SUCCESS.value),
+                id=data.get("id", str(uuid4())),
+                called_at=called_at,
+            )
+        except KeyError as exc:
+            raise ValueError(f"ToolCall.from_dict missing required field: {exc}") from exc
 
 
 @dataclass(slots=True)
@@ -502,6 +517,11 @@ class Workflow:
         Returns:
             A new Workflow instance.
 
+        Raises:
+            ValueError: If required fields (id, name) are missing or
+                        if step data is malformed.
+            TypeError: If data is not a dict.
+
         Example:
             >>> data = {"id": "w1", "name": "Deploy", "description": "",
             ...         "steps": [{"tool_id": "t1", "action": "build"}]}
@@ -509,13 +529,18 @@ class Workflow:
             >>> wf.name
             'Deploy'
         """
-        steps = [WorkflowStep.from_dict(s) for s in data.get("steps", [])]
-        return cls(
-            id=data["id"],
-            name=data["name"],
-            description=data.get("description", ""),
-            steps=steps,
-            trigger=data.get("trigger", WorkflowTrigger.MANUAL.value),
-            status=data.get("status", WorkflowStatus.ACTIVE.value),
-            created_by=data.get("created_by", "system"),
-        )
+        if not isinstance(data, dict):
+            raise TypeError(f"Workflow.from_dict expects a dict, got {type(data).__name__}")
+        try:
+            steps = [WorkflowStep.from_dict(s) for s in data.get("steps", [])]
+            return cls(
+                id=data["id"],
+                name=data["name"],
+                description=data.get("description", ""),
+                steps=steps,
+                trigger=data.get("trigger", WorkflowTrigger.MANUAL.value),
+                status=data.get("status", WorkflowStatus.ACTIVE.value),
+                created_by=data.get("created_by", "system"),
+            )
+        except KeyError as exc:
+            raise ValueError(f"Workflow.from_dict missing required field: {exc}") from exc

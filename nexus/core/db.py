@@ -408,16 +408,34 @@ class NexusStore:
 
         Returns:
             An instance of the dataclass with proper datetime fields.
+
+        Raises:
+            ValueError: If a datetime field contains an invalid ISO 8601 string
+                        or if the dataclass constructor rejects the data.
+            TypeError: If data is not a dict.
         """
         from datetime import datetime
+        if not isinstance(data, dict):
+            raise TypeError(f"Expected dict for {cls.__name__}, got {type(data).__name__}")
         parsed = dict(data)
         # Convert known datetime fields
         for field_name in ("registered_at", "bound_at", "called_at", "created_at"):
             if field_name in parsed and isinstance(parsed[field_name], str):
-                parsed[field_name] = datetime.fromisoformat(parsed[field_name])
+                try:
+                    parsed[field_name] = datetime.fromisoformat(parsed[field_name])
+                except (ValueError, TypeError) as exc:
+                    raise ValueError(
+                        f"Invalid ISO 8601 datetime for '{field_name}' "
+                        f"in {cls.__name__}: {parsed[field_name]!r}"
+                    ) from exc
         if extra:
             parsed.update(extra)
-        return cls(**parsed)
+        try:
+            return cls(**parsed)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Failed to construct {cls.__name__} from data: {exc}"
+            ) from exc
 
     def recent_calls(self, n: int = 10) -> list[ToolCall]:
         """Return the most recent tool calls.
