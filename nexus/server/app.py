@@ -238,27 +238,55 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Nexus", version="1.4.0", lifespan=lifespan)
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
+    @app.exception_handler(PermissionError)
+    async def permission_error_handler(request: Request, exc: PermissionError) -> JSONResponse:
+        """Handle PermissionError exceptions, returning a structured 403 JSON response."""
+        return JSONResponse(
+            status_code=403,
+            content=ErrorResponse(error="permission_denied", detail=str(exc), code="FORBIDDEN").model_dump(),
+        )
+
+    @app.exception_handler(KeyError)
+    async def not_found_handler(request: Request, exc: KeyError) -> JSONResponse:
+        """Handle KeyError exceptions, returning a structured 404 JSON response."""
+        return JSONResponse(
+            status_code=404,
+            content=ErrorResponse(error="not_found", detail=str(exc), code="NOT_FOUND").model_dump(),
+        )
+
+    @app.exception_handler(ValueError)
+    async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+        """Handle ValueError exceptions, returning a structured 400 JSON response."""
+        return JSONResponse(
+            status_code=400,
+            content=ErrorResponse(error="bad_request", detail=str(exc), code="INVALID_INPUT").model_dump(),
+        )
+
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         """Catch-all exception handler to prevent unhandled errors from leaking.
 
-        Returns a generic 500 response rather than exposing internal details.
-        The full error is still logged server-side.
+        Logs the full error server-side with traceback, then returns a
+        structured 500 JSON response with the request ID for traceability.
+        Specific exception types (PermissionError, KeyError, ValueError) are
+        handled by their own handlers above.
         """
+        request_id = getattr(request.state, "request_id", "unknown")
         logger.error(
-            "Unhandled exception on %s %s: %s",
+            "Unhandled exception on %s %s [%s]: %s",
             request.method,
             request.url.path,
+            request_id,
             exc,
             exc_info=True,
         )
         return JSONResponse(
             status_code=500,
-            content={
-                "error": "internal_server_error",
-                "detail": "An unexpected error occurred. Check server logs for details.",
-                "request_id": getattr(request.state, "request_id", None),
-            },
+            content=ErrorResponse(
+                error="internal_server_error",
+                detail=f"An unexpected error occurred. Request ID: {request_id}",
+                code="INTERNAL_ERROR",
+            ).model_dump(),
         )
 
     app.add_middleware(
@@ -304,43 +332,6 @@ def create_app() -> FastAPI:
         elapsed_ms = round((time.monotonic() - start) * 1000, 2)
         response.headers["X-Response-Time"] = f"{elapsed_ms}ms"
         return response
-
-    @app.exception_handler(PermissionError)
-    async def permission_error_handler(request: Request, exc: PermissionError) -> JSONResponse:
-        """Handle PermissionError exceptions, returning a structured 403 JSON response."""
-        return JSONResponse(
-            status_code=403,
-            content=ErrorResponse(error="permission_denied", detail=str(exc), code="FORBIDDEN").model_dump(),
-        )
-
-    @app.exception_handler(KeyError)
-    async def not_found_handler(request: Request, exc: KeyError) -> JSONResponse:
-        """Handle KeyError exceptions, returning a structured 404 JSON response."""
-        return JSONResponse(
-            status_code=404,
-            content=ErrorResponse(error="not_found", detail=str(exc), code="NOT_FOUND").model_dump(),
-        )
-
-    @app.exception_handler(ValueError)
-    async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
-        """Handle ValueError exceptions, returning a structured 400 JSON response."""
-        return JSONResponse(
-            status_code=400,
-            content=ErrorResponse(error="bad_request", detail=str(exc), code="INVALID_INPUT").model_dump(),
-        )
-
-    @app.exception_handler(Exception)
-    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-        """Catch-all handler for unhandled exceptions, returning a structured 500 JSON response."""
-        request_id = getattr(request.state, "request_id", "unknown")
-        return JSONResponse(
-            status_code=500,
-            content=ErrorResponse(
-                error="internal_server_error",
-                detail=f"An unexpected error occurred. Request ID: {request_id}",
-                code="INTERNAL_ERROR",
-            ).model_dump(),
-        )
 
     @app.post("/init")
     async def init() -> dict[str, Any]:

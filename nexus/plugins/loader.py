@@ -65,9 +65,14 @@ class PluginLoader:
             if path.name.startswith("_"):
                 continue
             spec_name = f"nexus_hot_{path.stem}"
-            loader = importlib.machinery.SourceFileLoader(spec_name, str(path))
-            module = importlib.util.module_from_spec(importlib.util.spec_from_loader(spec_name, loader))
-            loader.exec_module(module)
+            try:
+                loader = importlib.machinery.SourceFileLoader(spec_name, str(path))
+                module = importlib.util.module_from_spec(importlib.util.spec_from_loader(spec_name, loader))
+                loader.exec_module(module)
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning("Skipping plugin file %s: %s", path, exc)
+                continue
             plugins.extend(self._plugins_from_module(module))
         return plugins
 

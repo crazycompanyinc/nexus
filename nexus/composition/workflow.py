@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from nexus.api.unified import UnifiedToolAPI
 from nexus.core.db import NexusStore
-from nexus.core.models import Workflow, WorkflowStep
+from nexus.core.models import Workflow, WorkflowStep, WorkflowStatus
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +158,11 @@ class WorkflowBuilder:
         if description is not None:
             workflow.description = description
         if status is not None:
+            valid_statuses = {s.value for s in WorkflowStatus}
+            if status not in valid_statuses:
+                raise ValueError(
+                    f"Invalid workflow status '{status}': must be one of {sorted(valid_statuses)}"
+                )
             workflow.status = status
         if steps is not None:
             workflow.steps = [_parse_step_dict(step) for step in steps]

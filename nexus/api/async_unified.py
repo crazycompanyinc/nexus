@@ -220,15 +220,30 @@ class AsyncUnifiedToolAPI:
 
         if fail_fast:
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+            # Cancel all pending tasks immediately
             for t in pending:
                 t.cancel()
+            # Wait for cancellations to settle
+            if pending:
+                await asyncio.gather(*pending, return_exceptions=True)
             results = [None] * len(calls)
             for t in done:
                 idx, result = await t
-                if not result["success"]:
-                    for p in pending:
-                        p.cancel()
                 results[idx] = result
+                if not result["success"]:
+                    # Already cancelled pending above, just break
+                    break
+            # Fill any remaining None slots (from cancellations) with error entries
+            for i, r in enumerate(results):
+                if r is None:
+                    results[i] = {
+                        "tool_id": calls[i].get("tool_id", "unknown"),
+                        "action": calls[i].get("action", "unknown"),
+                        "result": None,
+                        "success": False,
+                        "error": "Cancelled due to fail_fast",
+                        "duration_ms": 0,
+                    }
             return results
 
         ordered = await asyncio.gather(*tasks, return_exceptions=False)

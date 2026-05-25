@@ -5,6 +5,14 @@ import uuid
 from contextvars import ContextVar
 from typing import Any
 
+__all__ = [
+    "CorrelationFilter",
+    "StructuredFormatter",
+    "configure_logging",
+    "get_correlation_id",
+    "set_correlation_id",
+]
+
 # Context variable for correlation ID — automatically propagates across async boundaries
 _correlation_id: ContextVar[str] = ContextVar("correlation_id", default="")
 

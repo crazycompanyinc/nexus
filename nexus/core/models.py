@@ -487,6 +487,8 @@ class Workflow:
                 errors.append(f"Step {i}: action cannot be empty")
             if step.max_retries < 0:
                 errors.append(f"Step {i}: max_retries cannot be negative")
+            if step.retry_delay_ms < 0:
+                errors.append(f"Step {i}: retry_delay_ms cannot be negative")
         return errors
 
     def to_dict(self) -> dict[str, Any]:
