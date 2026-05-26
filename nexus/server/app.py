@@ -4,6 +4,7 @@ import logging
 import time
 from contextlib import asynccontextmanager
 from dataclasses import asdict
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -81,11 +82,21 @@ class PaginatedResponse(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    """Standard error response envelope returned by all API error handlers."""
+    """Standard error response envelope returned by all API error handlers.
+
+    Attributes:
+        error: Machine-readable error category string.
+        detail: Human-readable error description.
+        code: Short error code for programmatic handling.
+        request_id: Unique request ID for traceability (from X-Request-ID).
+        timestamp: ISO 8601 timestamp of when the error occurred.
+    """
 
     error: str
     detail: str | None = None
     code: str | None = None
+    request_id: str | None = None
+    timestamp: str | None = None
 
 
 class CallRequest(BaseModel):
@@ -231,12 +242,15 @@ def _classify_error(exc: Exception) -> str:
     return "execution_error"
 
 
-def create_app() -> FastAPI:
+def create_app(max_body_size: int = 1_048_576) -> FastAPI:
     """Create and configure the Nexus FastAPI application.
 
     Initializes all core components (store, plugin manager, API, workflows,
     pipeline), registers middleware (rate limiting, request ID, CORS), exception
     handlers, and all API route endpoints.
+
+    Args:
+        max_body_size: Maximum request body size in bytes (default: 1 MB).
 
     Returns:
         A fully configured FastAPI application instance ready to serve.
@@ -264,31 +278,52 @@ def create_app() -> FastAPI:
             stats.get("workflows", 0),
         )
 
-    app = FastAPI(title="Nexus", version="1.5.0", lifespan=lifespan)
+    app = FastAPI(title="Nexus", version="1.6.0", lifespan=lifespan)
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
     @app.exception_handler(PermissionError)
     async def permission_error_handler(request: Request, exc: PermissionError) -> JSONResponse:
         """Handle PermissionError exceptions, returning a structured 403 JSON response."""
+        request_id = getattr(request.state, "request_id", None)
         return JSONResponse(
             status_code=403,
-            content=ErrorResponse(error="permission_denied", detail=str(exc), code="FORBIDDEN").model_dump(),
+            content=ErrorResponse(
+                error="permission_denied",
+                detail=str(exc),
+                code="FORBIDDEN",
+                request_id=request_id,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            ).model_dump(),
         )
 
     @app.exception_handler(KeyError)
     async def not_found_handler(request: Request, exc: KeyError) -> JSONResponse:
         """Handle KeyError exceptions, returning a structured 404 JSON response."""
+        request_id = getattr(request.state, "request_id", None)
         return JSONResponse(
             status_code=404,
-            content=ErrorResponse(error="not_found", detail=str(exc), code="NOT_FOUND").model_dump(),
+            content=ErrorResponse(
+                error="not_found",
+                detail=str(exc),
+                code="NOT_FOUND",
+                request_id=request_id,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            ).model_dump(),
         )
 
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
         """Handle ValueError exceptions, returning a structured 400 JSON response."""
+        request_id = getattr(request.state, "request_id", None)
         return JSONResponse(
             status_code=400,
-            content=ErrorResponse(error="bad_request", detail=str(exc), code="INVALID_INPUT").model_dump(),
+            content=ErrorResponse(
+                error="bad_request",
+                detail=str(exc),
+                code="INVALID_INPUT",
+                request_id=request_id,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            ).model_dump(),
         )
 
     @app.exception_handler(Exception)
@@ -315,6 +350,8 @@ def create_app() -> FastAPI:
                 error="internal_server_error",
                 detail=f"An unexpected error occurred. Request ID: {request_id}",
                 code="INTERNAL_ERROR",
+                request_id=request_id if request_id != "unknown" else None,
+                timestamp=datetime.now(timezone.utc).isoformat(),
             ).model_dump(),
         )
 
@@ -332,6 +369,32 @@ def create_app() -> FastAPI:
         response = await rate_limiter.check(request)
         if response is not None:
             return response
+        return await call_next(request)
+
+    @app.middleware("http")
+    async def body_size_limit_middleware(request: Request, call_next: Any) -> Any:
+        """Reject request bodies exceeding max_body_size bytes.
+
+        Protects against large payload attacks and resource exhaustion.
+        Skips GET/HEAD/OPTIONS requests which typically have no body.
+        The limit is configurable via ``create_app(max_body_size=...)``.
+        """
+        # Only check methods that commonly carry bodies
+        if request.method in ("POST", "PATCH", "PUT"):
+            content_length = request.headers.get("content-length")
+            if content_length is not None:
+                try:
+                    if int(content_length) > max_body_size:
+                        return JSONResponse(
+                            status_code=413,
+                            content=ErrorResponse(
+                                error="payload_too_large",
+                                detail=f"Request body exceeds {max_body_size // 1024} KB limit.",
+                                code="PAYLOAD_TOO_LARGE",
+                            ).model_dump(),
+                        )
+                except (ValueError, TypeError):
+                    pass  # Invalid Content-Length — let FastAPI handle it naturally
         return await call_next(request)
 
     @app.middleware("http")

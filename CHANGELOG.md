@@ -25,6 +25,21 @@ and this project adates to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `WorkflowBuilder.__repr__` — now returns correct format with workflow count.
 - `StepResult.__repr__` — now returns step index, tool, action, status, and duration.
 
+## [1.6.0] — 2026-05-26
+
+### Added
+- `ErrorResponse` now includes `request_id` and `timestamp` fields for full traceability across all error handlers.
+- `body_size_limit_middleware` — rejects request bodies exceeding configurable limit (default 1 MB) with HTTP 413, protecting against large payload attacks.
+- `create_app(max_body_size=...)` parameter — configurable request body size limit.
+
+### Changed
+- Version bumped from 1.5.0 → 1.6.0.
+- All exception handlers (PermissionError, KeyError, ValueError, global) now populate `request_id` and `timestamp` in error responses.
+- Added `datetime` import to server module for error response timestamps.
+
+### Security
+- Request body size validation on POST/PATCH/PUT methods prevents resource exhaustion from oversized payloads.
+
 ## [1.2.0] — 2026-05-23
 
 ### Added
