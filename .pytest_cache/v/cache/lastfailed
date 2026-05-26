@@ -2,5 +2,6 @@
   "tests/test_metrics_prometheus.py::TestVersionBump::test_version_is_1_3_0": true,
   "tests/test_metrics_prometheus.py::TestVersionBump::test_version_is_1_4_0": true,
   "tests/test_metrics_prometheus.py::TestVersionBump::test_version_is_1_5_0": true,
-  "tests/test_metrics_prometheus.py::TestVersionBump::test_version_is_1_6_0": true
+  "tests/test_metrics_prometheus.py::TestVersionBump::test_version_is_1_6_0": true,
+  "tests/test_metrics_prometheus.py::TestVersionBump::test_version_is_1_6_1": true
 }
