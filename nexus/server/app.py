@@ -12,7 +12,6 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
-from uuid import uuid4 as _uuid4
 import uuid as _uuid_module
 
 from nexus.api.unified import UnifiedToolAPI
@@ -419,20 +418,6 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
                 except (ValueError, TypeError):
                     pass  # Invalid Content-Length — let FastAPI handle it naturally
         return await call_next(request)
-
-    @app.middleware("http")
-    async def request_id_middleware(request: Request, call_next: Any) -> Any:
-        """Attach a unique request ID for traceability.
-
-        Uses ``X-Request-ID`` header if provided by the client,
-        otherwise generates a short UUID. The ID is injected into
-        the response headers so clients can correlate errors.
-        """
-        request_id = request.headers.get("X-Request-ID") or _uuid4().hex[:12]
-        request.state.request_id = request_id
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id
-        return response
 
     @app.middleware("http")
     async def timing_middleware(request: Request, call_next: Any) -> Any:
@@ -874,8 +859,10 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
         """
         try:
             api.access.revoke(agent_id, tool_id)
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Failed to revoke binding: {exc}") from exc
+        except KeyError:
+            raise HTTPException(status_code=404, detail=f"Binding not found for agent={agent_id} tool={tool_id}")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {"revoked": True, "agent_id": agent_id, "tool_id": tool_id}
 
     @app.get("/agents", tags=["Agents"])
