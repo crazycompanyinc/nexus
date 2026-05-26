@@ -202,6 +202,35 @@ class WorkflowPatchRequest(BaseModel):
     description: str | None = None
 
 
+class VersionResponse(BaseModel):
+    """Response model for the /version endpoint.
+
+    Attributes:
+        name: Application name.
+        version: Semantic version string.
+        api_version: API version identifier.
+        uptime_hint: Human-readable hint that the service is running.
+    """
+
+    name: str
+    version: str
+    api_version: str
+    status: str = "operational"
+
+
+def _classify_error(exc: Exception) -> str:
+    """Classify an exception into a machine-readable error category string."""
+    if isinstance(exc, PermissionError):
+        return "permission_denied"
+    if isinstance(exc, TimeoutError):
+        return "timeout"
+    if isinstance(exc, ConnectionError):
+        return "connection_error"
+    if isinstance(exc, ValueError):
+        return "invalid_input"
+    return "execution_error"
+
+
 def create_app() -> FastAPI:
     """Create and configure the Nexus FastAPI application.
 
@@ -235,7 +264,7 @@ def create_app() -> FastAPI:
             stats.get("workflows", 0),
         )
 
-    app = FastAPI(title="Nexus", version="1.4.0", lifespan=lifespan)
+    app = FastAPI(title="Nexus", version="1.5.0", lifespan=lifespan)
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
     @app.exception_handler(PermissionError)
@@ -331,6 +360,27 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         elapsed_ms = round((time.monotonic() - start) * 1000, 2)
         response.headers["X-Response-Time"] = f"{elapsed_ms}ms"
+        return response
+
+    @app.middleware("http")
+    async def request_logging_middleware(request: Request, call_next: Any) -> Any:
+        """Log every request with method, path, status code, and duration.
+
+        Uses structured logging format for easy parsing by log aggregation
+        systems (ELK, Loki, Datadog). Includes the request ID for correlation.
+        """
+        start = time.monotonic()
+        response = await call_next(request)
+        elapsed_ms = round((time.monotonic() - start) * 1000, 2)
+        request_id = getattr(request.state, "request_id", "unknown")
+        logger.info(
+            "request method=%s path=%s status=%d duration_ms=%s request_id=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            elapsed_ms,
+            request_id,
+        )
         return response
 
     @app.post("/init")
@@ -440,8 +490,10 @@ def create_app() -> FastAPI:
             return {"result": result}
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except TimeoutError as exc:
+            raise HTTPException(status_code=408, detail=str(exc)) from exc
         except Exception as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+            raise HTTPException(status_code=400, detail={"message": str(exc), "category": _classify_error(exc)}) from exc
 
     @app.post("/tools/batch", tags=["Tools"])
     async def batch_call(requests: list[CallRequest]) -> dict[str, Any]:
@@ -488,6 +540,7 @@ def create_app() -> FastAPI:
                     "tool_id": req.tool_id,
                     "action": req.action,
                     "error": res.get("error", "unknown"),
+                    "error_category": _classify_error(Exception(res.get("error", "unknown"))),
                     "success": False,
                     "duration_ms": res.get("duration_ms", 0),
                 })
@@ -1053,10 +1106,18 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail=f"Import failed: {exc}") from exc
 
     @app.get("/version", tags=["System"])
-    async def version() -> dict[str, str]:
-        """Return the Nexus API version."""
+    async def version() -> dict[str, Any]:
+        """Return the Nexus API version and status.
+
+        Returns a dict with name, version, api_version, and status
+        for health monitoring and client negotiation.
+        """
         from nexus import __version__
-        return {"version": __version__}
+        return VersionResponse(
+            name="Nexus",
+            version=__version__,
+            api_version="v1",
+        ).model_dump()
 
     @app.get("/topology", tags=["System"])
     async def topology() -> dict[str, Any]:
