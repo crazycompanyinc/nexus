@@ -97,9 +97,9 @@ class TestAuditPagination:
 
 class TestVersionBump:
     """Tests for version 1.3.0."""
-
-    def test_version_is_1_6_1(self) -> None:
-        resp = client.get("/version")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["version"] == "1.6.1"
+    def test_version_is_1_7_0(self) -> None:
+        """Version should be 1.7.0."""
+        response = client.get("/version")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["version"] == "1.7.0"

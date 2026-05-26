@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -23,6 +24,9 @@ from nexus.permissions.access import AccessControl
 from nexus.plugins.manager import PluginManager
 
 logger = logging.getLogger(__name__)
+
+# Application start time for uptime tracking
+_APP_START_TIME: float = time.monotonic()
 
 
 class RateLimitMiddleware:
@@ -482,12 +486,13 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
 
     @app.get("/health", tags=["System"])
     async def health() -> dict[str, Any]:
-        """Return the health status of the Nexus store.
+        """Liveness probe — returns healthy if the process is running.
 
         Returns:
-            Health check dict from NexusStore.health_check().
+            Dict with status, version, and uptime_seconds.
         """
-        return store.health_check()
+        uptime_seconds = round(time.monotonic() - _APP_START_TIME, 2)
+        return store.health_check() | {"uptime_seconds": uptime_seconds}
 
     @app.get("/plugins", tags=["Plugins"])
     async def plugins(
@@ -1135,10 +1140,19 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
 
     @app.get("/health/detailed", tags=["System"])
     async def health_detailed() -> dict[str, Any]:
-        """Detailed health check including plugin capabilities and store stats."""
+        """Detailed health check including plugin capabilities, store stats, uptime, and memory."""
         plugins = manager.list_plugins()
+        try:
+            import resource
+            mem_usage_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            memory = {"rss_kb": mem_usage_kb, "rss_mb": round(mem_usage_kb / 1024, 2)}
+        except ImportError:
+            memory = {"rss_kb": -1, "rss_mb": -1, "note": "resource module unavailable on this platform"}
+        uptime_seconds = round(time.monotonic() - _APP_START_TIME, 2)
         return {
             "status": "healthy",
+            "uptime_seconds": uptime_seconds,
+            "memory": memory,
             "plugins": {
                 "total": len(plugins),
                 "active": sum(1 for p in plugins if p.status == "active"),
@@ -1188,17 +1202,18 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
 
     @app.get("/version", tags=["System"])
     async def version() -> dict[str, Any]:
-        """Return the Nexus API version and status.
+        """Return the Nexus API version, supported API versions, and uptime.
 
-        Returns a dict with name, version, api_version, and status
-        for health monitoring and client negotiation.
+        Returns a dict with name, version, api_version, supported_versions,
+        and uptime_seconds for health monitoring and client negotiation.
         """
         from nexus import __version__
+        uptime_seconds = round(time.monotonic() - _APP_START_TIME, 2)
         return VersionResponse(
             name="Nexus",
             version=__version__,
             api_version="v1",
-        ).model_dump()
+        ).model_dump() | {"supported_versions": ["v1"], "uptime_seconds": uptime_seconds}
 
     @app.get("/topology", tags=["System"])
     async def topology() -> dict[str, Any]:

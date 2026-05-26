@@ -25,6 +25,20 @@ and this project adates to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `WorkflowBuilder.__repr__` — now returns correct format with workflow count.
 - `StepResult.__repr__` — now returns step index, tool, action, status, and duration.
 
+## [1.7.0] — 2026-05-26
+
+### Added
+- **Uptime tracking** — `/health` and `/version` endpoints now include `uptime_seconds` for production monitoring.
+- **Memory usage in health checks** — `/health/detailed` now reports RSS memory usage (via `resource.getrusage`) with platform fallback.
+- **API version negotiation** — `/version` endpoint includes `supported_versions` list for client capability negotiation.
+- **Application start time constant** — `_APP_START_TIME` module-level variable for consistent uptime calculation across endpoints.
+
+### Changed
+- `/health` endpoint — now a liveness probe with uptime, not just store health check.
+- `/health/detailed` — enhanced with `uptime_seconds` and `memory` fields.
+- `/version` — enhanced with `supported_versions` and `uptime_seconds`.
+- Version bumped from 1.6.1 → 1.7.0.
+
 ## [1.6.0] — 2026-05-26
 
 ### Added
