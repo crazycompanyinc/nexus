@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from uuid import uuid4 as _uuid4
+import uuid as _uuid_module
 
 from nexus.api.unified import UnifiedToolAPI
 from nexus.composition.workflow import Pipeline, WorkflowBuilder
@@ -44,6 +45,7 @@ class RateLimitMiddleware:
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self._requests: dict[str, list[float]] = {}
+        self._last_global_cleanup: float = time.monotonic()
 
     async def check(self, request: Request) -> JSONResponse | None:
         """Check rate limit for the request. Returns None if allowed, JSONResponse if denied."""
@@ -55,10 +57,12 @@ class RateLimitMiddleware:
         # Purge old entries for this client
         timestamps[:] = [t for t in timestamps if t > window_start]
 
-        # Global cleanup: remove IPs whose entire window has expired
-        stale_ips = [ip for ip, ts in self._requests.items() if ip != client and ts and ts[-1] <= window_start]
-        for ip in stale_ips:
-            del self._requests[ip]
+        # Periodic global cleanup: only every window_seconds to avoid O(n) per request
+        if now - self._last_global_cleanup >= self.window_seconds:
+            self._last_global_cleanup = now
+            stale_ips = [ip for ip, ts in self._requests.items() if ip != client and ts and ts[-1] <= window_start]
+            for ip in stale_ips:
+                del self._requests[ip]
 
         if len(timestamps) >= self.max_requests:
             retry_after = int(timestamps[0] + self.window_seconds - now) + 1
@@ -209,7 +213,6 @@ class WorkflowPatchRequest(BaseModel):
 
     name: str | None = None
     steps: list[dict[str, Any]] | None = None
-    created_by: str | None = None
     description: str | None = None
 
 
@@ -278,7 +281,7 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
             stats.get("workflows", 0),
         )
 
-    app = FastAPI(title="Nexus", version="1.6.0", lifespan=lifespan)
+    app = FastAPI(title="Nexus", version="1.6.1", lifespan=lifespan)
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
     @app.exception_handler(PermissionError)
@@ -362,6 +365,22 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def request_id_middleware(request: Request, call_next: Any) -> Any:
+        """Assign a unique request ID to every incoming request.
+
+        Reads ``X-Request-ID`` header if provided (trace propagation),
+        otherwise generates a new UUID. Stores the ID in
+        ``request.state.request_id`` so error handlers and route
+        handlers can reference it. Also adds the ID as a response
+        header so clients can correlate errors.
+        """
+        rid = request.headers.get("x-request-id") or str(_uuid_module.uuid4())
+        request.state.request_id = rid
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = rid
+        return response
 
     @app.middleware("http")
     async def rate_limit_middleware(request: Request, call_next: Any) -> Any:
@@ -1071,7 +1090,6 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
                 workflow_id,
                 name=request.name,
                 description=request.description,
-                created_by=request.created_by,
                 steps=request.steps,
             )
             return updated.to_dict()

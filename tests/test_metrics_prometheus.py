@@ -98,8 +98,8 @@ class TestAuditPagination:
 class TestVersionBump:
     """Tests for version 1.3.0."""
 
-    def test_version_is_1_6_0(self) -> None:
+    def test_version_is_1_6_1(self) -> None:
         resp = client.get("/version")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["version"] == "1.6.0"
+        assert data["version"] == "1.6.1"

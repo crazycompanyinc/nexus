@@ -13,7 +13,7 @@ from nexus.metrics.performance import PerformanceTracker
 from nexus.composition.workflow import WorkflowBuilder, Pipeline
 from nexus.composition.chain import AsyncToolChain
 
-__version__ = "1.6.0"
+__version__ = "1.6.1"
 
 __all__ = [
     "AgentToolBinding",
