@@ -310,7 +310,7 @@ class TestVersionBumped:
         resp = client.get("/version")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["version"] == "1.7.0"
+        assert data["version"] == "1.8.0"
 
 
 class TestTopologyEndpoint:

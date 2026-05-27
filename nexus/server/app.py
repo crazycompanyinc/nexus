@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import signal
 import time
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -248,7 +249,7 @@ def _classify_error(exc: Exception) -> str:
     return "execution_error"
 
 
-def create_app(max_body_size: int = 1_048_576) -> FastAPI:
+def create_app(max_body_size: int = 1_048_576, graceful_shutdown_timeout: float = 30.0) -> FastAPI:
     """Create and configure the Nexus FastAPI application.
 
     Initializes all core components (store, plugin manager, API, workflows,
@@ -257,6 +258,8 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
 
     Args:
         max_body_size: Maximum request body size in bytes (default: 1 MB).
+        graceful_shutdown_timeout: Seconds to wait for in-flight requests
+            to complete before forced shutdown (default: 30).
 
     Returns:
         A fully configured FastAPI application instance ready to serve.
@@ -284,7 +287,21 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
             stats.get("workflows", 0),
         )
 
-    app = FastAPI(title="Nexus", version="1.6.1", lifespan=lifespan)
+    app = FastAPI(
+        title="Nexus",
+        version="1.8.0",
+        description="Universal agent integration hub — tool composition, workflow orchestration, and plugin management.",
+        lifespan=lifespan,
+        openapi_tags=[
+            {"name": "System", "description": "Health, readiness, version, and system operations"},
+            {"name": "Agents", "description": "Agent registration, listing, and call history"},
+            {"name": "Plugins", "description": "Plugin management, discovery, and capabilities"},
+            {"name": "Bindings", "description": "Agent-to-tool permission bindings"},
+            {"name": "Workflows", "description": "Workflow creation, patching, execution, and run history"},
+            {"name": "Metrics", "description": "Usage metrics, Prometheus export, performance, and circuit breakers"},
+            {"name": "Audit", "description": "Audit trail and event logging"},
+        ],
+    )
     rate_limiter = RateLimitMiddleware(max_requests=120, window_seconds=60)
 
     @app.exception_handler(PermissionError)
@@ -369,6 +386,28 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Graceful shutdown signal handler
+    _shutdown_event = False
+
+    def _handle_shutdown_signal(signum: int, frame: Any) -> None:
+        """Handle OS signals for graceful shutdown.
+
+        Sets the internal shutdown flag so health endpoints can report
+        the service as draining, allowing load balancers to stop sending
+        new requests while in-flight requests complete.
+        """
+        nonlocal _shutdown_event
+        _shutdown_event = True
+        signal_name = signal.Signals(signum).name
+        logger.info(
+            "Received %s — entering draining mode (max %ss to complete in-flight requests)",
+            signal_name,
+            graceful_shutdown_timeout,
+        )
+
+    signal.signal(signal.SIGTERM, _handle_shutdown_signal)
+    signal.signal(signal.SIGINT, _handle_shutdown_signal)
+
     @app.middleware("http")
     async def request_id_middleware(request: Request, call_next: Any) -> Any:
         """Assign a unique request ID to every incoming request.
@@ -417,6 +456,30 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
                         )
                 except (ValueError, TypeError):
                     pass  # Invalid Content-Length — let FastAPI handle it naturally
+        return await call_next(request)
+
+    @app.middleware("http")
+    async def content_type_guard_middleware(request: Request, call_next: Any) -> Any:
+        """Enforce JSON content-type on mutating requests.
+
+        Returns HTTP 415 Unsupported Media-Type when POST/PATCH/PUT
+        requests carry a body but lack ``Content-Type: application/json``.
+        This prevents silent misinterpretation of form-encoded or plain
+        text payloads by downstream JSON parsers.
+        """
+        if request.method in ("POST", "PATCH", "PUT"):
+            content_length = request.headers.get("content-length")
+            if content_length and int(content_length) > 0:
+                ct = request.headers.get("content-type", "")
+                if "application/json" not in ct:
+                    return JSONResponse(
+                        status_code=415,
+                        content=ErrorResponse(
+                            error="unsupported_media_type",
+                            detail="Mutating requests must use Content-Type: application/json.",
+                            code="UNSUPPORTED_MEDIA_TYPE",
+                        ).model_dump(),
+                    )
         return await call_next(request)
 
     @app.middleware("http")
@@ -473,11 +536,15 @@ def create_app(max_body_size: int = 1_048_576) -> FastAPI:
     async def health() -> dict[str, Any]:
         """Liveness probe — returns healthy if the process is running.
 
+        Returns "draining" status when a shutdown signal has been received,
+        allowing load balancers to stop routing new traffic.
+
         Returns:
             Dict with status, version, and uptime_seconds.
         """
         uptime_seconds = round(time.monotonic() - _APP_START_TIME, 2)
-        return store.health_check() | {"uptime_seconds": uptime_seconds}
+        status = "draining" if _shutdown_event else "healthy"
+        return store.health_check() | {"uptime_seconds": uptime_seconds, "status": status}
 
     @app.get("/plugins", tags=["Plugins"])
     async def plugins(
